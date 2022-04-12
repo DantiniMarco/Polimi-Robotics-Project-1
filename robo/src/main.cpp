@@ -1,4 +1,8 @@
 #include "ros/ros.h"
+
+#include "sensor_msgs/JointState.h" // wheel_states messages
+#include "geometry_msgs/TwistStamped.h" // published messages
+
 #include <math.h>
 
 // Publish v, ⍵ as topic cmd_vel of type geometry_msgs/TwistStamped
@@ -18,7 +22,51 @@ private:
       Rear left wheel = 4
     */
     double w1, w2, w3, w4; // input in [rad/min]
+
+    geometry_msgs::TwistStamped velocities; // message to be published
+
     float t_s; //time of sampling
+
+    Odometry() {
+        ros::NodeHandle node;
+        ros::Subscriber sub = node.subscribe("wheel_states", 1000, &Odometry::wheel_state_callback);
+
+        ros::Publisher pub = node.advertise<geometry_msgs::TwistStamped>("/cmd_vel", 1);
+
+        ros::Timer timer = n.createTimer(ros::Duration(0.01), &timer_callback);
+
+        dynamic_reconfigure::Server<robo::parametersConfig> dynServer;
+        dynamic_reconfigure::Server<robo::parametersConfig>::CallbackType f;
+        f = boost::bind(&param_callback, &mode, &fmt, _1, _2);
+        dynServer.setCallback(f);
+
+        // robot/pose
+        //msg->pose.position.//x,y,z;
+        //msg->pose.orientation.//x,y,z,w
+
+    }
+
+    void Odometry::wheel_state_callback(const robo::sensor_msgs::JointStateConstPtr& msg) {
+        w1 = msg->velocity[0];
+        w2 = msg->velocity[1];
+        w3 = msg->velocity[2];
+        w4 = msg->velocity[3];
+
+        computeVelocities();
+
+    }
+
+    void publisher() {
+        //Publish v, ⍵ as topic cmd_vel of type geometry_msgs/TwistStamped
+    }
+
+    //callback to copy the filtered twist to the message in order for the publisher to publish it
+    void callback_publisher_timer(const ros::TimerEvent&) {
+        if ((latest_sent_time-current_time).toSec() != 0) {
+            latest_sent_time = current_time;
+            pub.publish(custom_odometry);
+        }
+    }
 
     /*
      * omega: angular velocity
@@ -42,8 +90,8 @@ private:
      */
     void computeVelocities() {
 
-        vbx = (w1 + w2 + w3 + w4) * (r/4.0) * 60.0;
-        vby = (-w1 + w2 - w3 + w4) * (r/4.0) * 60.0;
+        vx = (w1 + w2 + w3 + w4) * (r/4.0) * 60.0;
+        vy = (-w1 + w2 - w3 + w4) * (r/4.0) * 60.0;
         omega = (-w1 + w2 + w3 - w4) * (r/4.0 / (l+w)) * 60.0;
 
     }
