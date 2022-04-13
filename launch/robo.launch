@@ -1,0 +1,6 @@
+<launch>
+
+    <param name="mode" value="true" />
+    <node pkg="robo" type="odometry" name="my_subscriber" output="screen" />
+
+</launch>
