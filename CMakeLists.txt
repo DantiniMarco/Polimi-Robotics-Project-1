@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
     message_generation
     geometry_msgs
+    dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -50,15 +51,16 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
    FILES
-   test1.msg
+   speeds.msg
+   odom.msg
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+ add_service_files(
+   FILES
+   set_odometry.srv
+
+ )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -89,10 +91,9 @@ generate_messages(
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+generate_dynamic_reconfigure_options(
+   cfg/parameters.cfg
+    )
 
 ###################################
 ## catkin specific configuration ##
@@ -133,7 +134,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(odometry src/main.cpp)
+add_executable(odometry src/Odometry.cpp)
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
