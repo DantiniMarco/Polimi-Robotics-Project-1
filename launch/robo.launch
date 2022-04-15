@@ -1,6 +1,9 @@
 <launch>
 
-    <param name="mode" value="true" />
+    <param name="pose_x" value="0" />
+    <param name="pose_y" value="0" />
+    <param name="pose_theta" value="0" />
+
     <node pkg="robo" type="odometry" name="my_subscriber" output="screen" />
 
 </launch>

@@ -8,16 +8,27 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <dynamic_reconfigure/server.h>
-#include <Odometry/parametersConfig.h>
-#include <math.h>
 
-// Publish v, ⍵ as topic cmd_vel of type geometry_msgs/TwistStamped
+#include "robo/parametersConfig.h" // parameters file config
+#include "robo/odom.h" // odometry message
+#include "robo/speeds.h" // speeds message
+#include "robo/set_odometry.h" // odometry service
+
+#include <cmath>
+
+using namespace robo;
 
 class Odometry {
 private:
-    const double l = 0.2, w = 0.169, r = 0.07, gear_ratio = 5.0;
-    double omega, vx, vy, new_x, new_y, new_theta;
-    int integration_method;
+    const double l = 0.2, w = 0.169, r = 0.07, gear_ratio = 5.0, tick_count = 42.0;
+
+    double omega, vx, vy; // velocities computed from wheel speeds
+    double new_x, new_y, new_theta;
+
+    // x, y, theta values set by parameters, can be also dynamically reconfigured
+    double current_x, current_y, current_theta;
+    int integration_method; // switch between euler and runge-kutta
+    bool reset; // flag that indicates whether the set service has been called
 
     /*
       Front left wheel = 1
@@ -29,11 +40,10 @@ private:
 
     geometry_msgs::TwistStamped velocities; // v and w velocities computed from wheel speeds to be published
 
-    nav_msgs::Odometry odometry_msg; //computed odometry to be published 
+    robo::odom custom_odometry; //computed odometry to be published
 
     geometry_msgs::TransformStamped transformStamped;
 
-    float t_s; //time of sampling
     ros::Time current_time = ros::Time(0);
     ros::Time latest_sent_time = ros::Time(0);
 
@@ -47,21 +57,23 @@ private:
     tf2::Quaternion current_quaternion;
     tf2_ros::TransformBroadcaster br;
 
-    dynamic_reconfigure::Server<Odometry::parametersConfig> server;
-    dynamic_reconfigure::Server<Odometry::parametersConfig>::CallbackType callback_f;
-
+    dynamic_reconfigure::Server<parametersConfig> server;
+    dynamic_reconfigure::Server<parametersConfig>::CallbackType callback_f;
 
 
 public:
     Odometry();
 
+    // functions
+
     void wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg);
-    void publisher();
     void callback_publisher_timer(const ros::TimerEvent&);
+    bool callback_set_odometry(set_odometry::Request &request, set_odometry::Response &response);
+    void callback_dynamic_reconfigure(parametersConfig &config, uint32_t level);
+
     void computeOmega();
     void computeVelocities();
-    void integrations();
-
+    void integrations(const sensor_msgs::JointStateConstPtr& msg);
 };
 
 #endif

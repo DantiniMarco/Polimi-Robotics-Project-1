@@ -9,10 +9,14 @@ add_compile_options(-std=c++11)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
     roscpp
+    rospy
     std_msgs
     message_generation
     geometry_msgs
     dynamic_reconfigure
+    nav_msgs
+    tf2_ros
+    tf2
 )
 
 ## System dependencies are found with CMake's conventions
@@ -74,6 +78,7 @@ generate_messages(
    DEPENDENCIES
    std_msgs
    geometry_msgs
+   nav_msgs
 )
 
 ################################################
@@ -91,9 +96,7 @@ generate_messages(
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-generate_dynamic_reconfigure_options(
-   cfg/parameters.cfg
-    )
+generate_dynamic_reconfigure_options( cfg/parameters.cfg )
 
 ###################################
 ## catkin specific configuration ##
