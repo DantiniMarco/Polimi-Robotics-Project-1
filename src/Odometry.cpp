@@ -24,7 +24,7 @@ Odometry::Odometry() {
 
     serviceSet = node.advertiseService<set_odometry::Request, set_odometry::Response>(
         "set_odometry",
-        boost::bind(&Odometry::callback_set_odometry, &new_x, &new_y, &new_theta, _1, _2, _3, _4)
+        boost::bind(&Odometry::callback_set_odometry, this, _1, _2)
     );
 
     reset = false;
@@ -112,11 +112,9 @@ void Odometry::integrations(const sensor_msgs::JointStateConstPtr& msg) {
     }
     /*
     current_quaternion.setRPY(0, 0, current_theta);
-
     custom_odometry.odom.header.stamp = msg->header.stamp;
     custom_odometry.odom.pose.pose.position.x = current_x;
     custom_odometry.odom.pose.pose.position.y = current_y;
-
     custom_odometry.odom.pose.pose.orientation.x = current_quaternion[0];
     custom_odometry.odom.pose.pose.orientation.y = current_quaternion[1];
     custom_odometry.odom.pose.pose.orientation.z = current_quaternion[2];
