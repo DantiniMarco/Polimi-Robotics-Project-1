@@ -39,7 +39,6 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
         current_x = 0.0;
         current_y = 0.0;
         current_theta = 0.0;
-        current_time = msg->header.stamp;
     } else if (reset) { // service was called
         reset = false;
 
@@ -100,7 +99,7 @@ void Odometry::integrations(const sensor_msgs::JointStateConstPtr& msg) {
     ros::Duration time_difference = msg->header.stamp - current_time;
     double t_s = time_difference.toSec(); //time of sampling
 
-    if (integration_method == 1){ // Euler
+    if (integration_method == integration_methods.EULER){ // Euler
         // formulas
         current_x = current_x + vel * t_s * cos(current_theta);
         current_y = current_y + vel * t_s * sin(current_theta);
@@ -108,7 +107,7 @@ void Odometry::integrations(const sensor_msgs::JointStateConstPtr& msg) {
 
         custom_odometry.method.data = "euler";
 
-    } else if (integration_method == 2){ // Runge-Kutta
+    } else if (integration_method == integration_methods.RUNGE_KUTTA){ // Runge-Kutta
         // formulas
         current_x = current_x + vel * t_s * cos(current_theta + omega * t_s / 2.0);
         current_y = current_y + vel * t_s * sin(current_theta + omega * t_s / 2.0);
@@ -151,10 +150,15 @@ bool Odometry::callback_set_odometry(set_odometry::Request &request, set_odometr
  *  Dynamic reconfiguration callback that changes the integration method at runtime
  */
 void Odometry::callback_dynamic_reconfigure(parametersConfig &config, uint32_t level) {
-    integration_method = config.integration_method;
     std::string method;
-    if (integration_method == 1) method = "Euler";
-    else method = "Runge-Kutta";
+    if (config.integration_method == 1) {
+        integration_method = EULER;
+        method = "Euler";
+    } else if (config.integration_method == 2) {
+        integration_method = RUNGE_KUTTA;
+        method = "Runge-Kutta";
+    }
+
     ROS_INFO("Request to dynamically reconfigure the integration method received: now using %s", method.c_str());
 }
 

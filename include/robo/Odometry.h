@@ -18,6 +18,8 @@
 
 using namespace robo;
 
+enum integration_methods {EULER, RUNGE_KUTTA};
+
 class Odometry {
 private:
     const double l = 0.2, w = 0.169, r = 0.07, gear_ratio = 5.0, tick_count = 42.0;
@@ -27,7 +29,7 @@ private:
 
     // x, y, theta values set by parameters, can be also dynamically reconfigured
     double current_x, current_y, current_theta;
-    int integration_method; // switch between euler and runge-kutta
+    integration_methods integration_method; // switch between euler and runge-kutta
     bool reset; // flag that indicates whether the set service has been called
 
     /*
