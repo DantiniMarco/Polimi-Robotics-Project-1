@@ -40,6 +40,7 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
         current_x = 0.0;
         current_y = 0.0;
         current_theta = 0.0;
+
     } else if (reset) { // service was called
         reset = false;
 
@@ -58,6 +59,7 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
         velocities.twist.linear.x = vx;
         velocities.twist.linear.y = vy;
         velocities.twist.angular.z = omega;
+        velocities.header.stamp = msg->header.stamp;
 
         integrations(msg); // integrate velocities to find robot pose
     }
@@ -125,7 +127,7 @@ void Odometry::integrations(const sensor_msgs::JointStateConstPtr& msg) {
  *  Publishes messages containing computed data from bags input
  */
 void Odometry::callback_publisher_timer(const ros::TimerEvent& ev) {
-    if ((latest_sent_time - current_time).toSec() > 0) {
+    if ((latest_sent_time - current_time).toSec() != 0) {
         latest_sent_time = current_time;
 
         //Publish v, ⍵ as topic cmd_vel of type geometry_msgs/TwistStamped
