@@ -27,6 +27,7 @@ private:
     double omega, vx, vy; // velocities computed from wheel speeds
     double new_x, new_y, new_theta; // new odometry set by service
 
+
     // x, y, theta values set by parameters, can be also dynamically reconfigured
     double current_x, current_y, current_theta;
     integration_methods integration_method; // switch between euler and runge-kutta

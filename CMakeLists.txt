@@ -57,6 +57,7 @@ add_message_files(
    FILES
    speeds.msg
    odom.msg
+   wheels_rpm.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -138,10 +139,14 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(odometry src/Odometry.cpp)
+add_executable(control src/Control.cpp)
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 add_dependencies(odometry ${catkin_EXPORTED_TARGETS})
+add_dependencies(control ${catkin_EXPORTED_TARGETS})
+
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -155,6 +160,8 @@ add_dependencies(odometry ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(odometry ${catkin_LIBRARIES})
+target_link_libraries(control ${catkin_LIBRARIES})
+
 
 #############
 ## Install ##

@@ -35,6 +35,7 @@ Odometry::Odometry() {
  *  Callback of the subscriber to the wheel_states topic. Computes velocity and robot odometry
  */
 void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) {
+
     if (current_time == ros::Time(0)) { // start of execution
         current_x = 0.0;
         current_y = 0.0;
@@ -46,6 +47,7 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
         current_y = new_y;
         current_theta = new_theta;
     } else { // computation
+
         w1 = msg->velocity[0]; // front left
         w2 = msg->velocity[1]; // front right
         w3 = msg->velocity[2]; // rear left
@@ -99,7 +101,7 @@ void Odometry::integrations(const sensor_msgs::JointStateConstPtr& msg) {
     ros::Duration time_difference = msg->header.stamp - current_time;
     double t_s = time_difference.toSec(); //time of sampling
 
-    if (integration_method == integration_methods.EULER){ // Euler
+    if (integration_method == EULER){ // Euler
         // formulas
         current_x = current_x + vel * t_s * cos(current_theta);
         current_y = current_y + vel * t_s * sin(current_theta);
@@ -107,7 +109,7 @@ void Odometry::integrations(const sensor_msgs::JointStateConstPtr& msg) {
 
         custom_odometry.method.data = "euler";
 
-    } else if (integration_method == integration_methods.RUNGE_KUTTA){ // Runge-Kutta
+    } else if (integration_method == RUNGE_KUTTA){ // Runge-Kutta
         // formulas
         current_x = current_x + vel * t_s * cos(current_theta + omega * t_s / 2.0);
         current_y = current_y + vel * t_s * sin(current_theta + omega * t_s / 2.0);
@@ -162,22 +164,6 @@ void Odometry::callback_dynamic_reconfigure(parametersConfig &config, uint32_t l
     ROS_INFO("Request to dynamically reconfigure the integration method received: now using %s", method.c_str());
 }
 
-/*
-* omega: angular velocity of the robot -> YAW orientation
-* vx: linear velocity along x [m/s]
-* vy: linear velocity along y [m/s]
-* w1,w2,w3,w4: angular velocities of the wheels [rad/s]
-* l,w = robot dimensions
-* r = wheel radius
-*/
-void Odometry::computeOmega() {
-
-    w1 = (-(l + w) / r) * omega + vx / r - vy / r;
-    w2 = ((l + w) / r) * omega + vx / r + vy / r;
-    w3 = (-(l + w) / r) * omega + vx / r + vy / r;
-    w4 = ((l + w) / r) * omega + vx / r - vy / r;
-
-}
 /**
  *  calculation of the robot velocities from the speeds of the wheels
 */

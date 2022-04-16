@@ -4,6 +4,8 @@
     <param name="pose_y" value="0" />
     <param name="pose_theta" value="0" />
 
-    <node pkg="robo" type="odometry" name="my_subscriber" output="screen" />
+    <node pkg="robo" type="odometry" name="odometry_computation" output="screen" />
+    <node pkg="robo" type="control" name="reverse_computation" output="screen" />
+
 
 </launch>
