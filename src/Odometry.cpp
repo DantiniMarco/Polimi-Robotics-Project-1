@@ -45,10 +45,10 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
         current_theta = new_theta;
     } else {
 
-        w1 = msg->velocity[0];
-        w2 = msg->velocity[1];
-        w3 = msg->velocity[2];
-        w4 = msg->velocity[3];
+        w1 = msg->velocity[0]; // front left
+        w2 = msg->velocity[1]; // front right
+        w3 = msg->velocity[2]; // rear left
+        w4 = msg->velocity[3]; // rear right
 
         computeVelocities();
 
@@ -161,8 +161,8 @@ void Odometry::computeOmega() {
 
     w1 = (-(l + w) / r) * omega + vx / r - vy / r;
     w2 = ((l + w) / r) * omega + vx / r + vy / r;
-    w3 = ((l + w) / r) * omega + vx / r - vy / r;
-    w4 = (-(l + w) / r) * omega + vx / r + vy / r;
+    w3 = (-(l + w) / r) * omega + vx / r + vy / r;
+    w4 = ((l + w) / r) * omega + vx / r - vy / r;
 
 }
 /*
@@ -172,8 +172,8 @@ void Odometry::computeOmega() {
 void Odometry::computeVelocities() {
 
     vx = (w1 + w2 + w3 + w4) * (r / 4.0) / 60.0 / gear_ratio;
-    vy = (-w1 + w2 - w3 + w4) * (r / 4.0) / 60.0 / gear_ratio;
-    omega = (-w1 + w2 + w3 - w4) * (r / 4.0 / (l + w)) / 60.0 / gear_ratio;
+    vy = (-w1 + w2 + w3 - w4) * (r / 4.0) / 60.0 / gear_ratio;
+    omega = (-w1 + w2 - w3 + w4) * (r / 4.0 / (l + w)) / 60.0 / gear_ratio;
 
 }
 
