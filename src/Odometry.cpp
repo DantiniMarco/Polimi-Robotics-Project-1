@@ -29,7 +29,6 @@ Odometry::Odometry() {
     );
 
     reset = false;
-
 }
 
 /**
