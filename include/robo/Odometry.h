@@ -4,17 +4,19 @@
 #include "ros/ros.h"
 #include "sensor_msgs/JointState.h" // wheel_states messages
 #include "geometry_msgs/TwistStamped.h" // published messages
+#include "geometry_msgs/PoseStamped.h" // published messages
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <dynamic_reconfigure/server.h>
-
+#include <tf2/LinearMath/Matrix3x3.h>
 #include "robo/parametersConfig.h" // parameters file config
 #include "robo/odom.h" // odometry message
-#include "robo/speeds.h" // speeds message
 #include "robo/set_odometry.h" // odometry service
-
 #include <cmath>
+#include <tf2/convert.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 
 using namespace robo;
 
@@ -26,6 +28,7 @@ private:
 
     double omega, vx, vy; // velocities computed from wheel speeds
     double new_x, new_y, new_theta; // new odometry set by service
+    double prev_x = 0.0, prev_y = 0.0, prev_theta = 0.0; // testing purposes variables
 
 
     // x, y, theta values set by parameters, can be also dynamically reconfigured
@@ -43,6 +46,8 @@ private:
 
     //messages to be published
     geometry_msgs::TwistStamped velocities; // v and w velocities computed from wheel speeds
+    geometry_msgs::TwistStamped test_msg; // partial velocities to be published
+
     odom custom_odometry; //computed odometry
 
     ros::Time current_time = ros::Time(0);
@@ -51,6 +56,8 @@ private:
     ros::Subscriber sub;
     ros::Publisher pub_speeds;
     ros::Publisher pub_odom;
+    ros::Subscriber sub_test;
+    ros::Publisher pub_test;
     ros::NodeHandle node;
     ros::Timer timer;
     ros::ServiceServer serviceSet;
@@ -67,6 +74,8 @@ private:
     void callback_publisher_timer(const ros::TimerEvent&);
     bool callback_set_odometry(set_odometry::Request &request, set_odometry::Response &response);
     void callback_dynamic_reconfigure(parametersConfig &config, uint32_t level);
+    void optitrack_callback(const geometry_msgs::PoseStampedConstPtr& msg);
+
 
     void computeOmega();
     void computeVelocities();
