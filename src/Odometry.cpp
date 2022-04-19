@@ -39,9 +39,6 @@ Odometry::Odometry() {
  *  Callback of the subscriber to the wheel_states topic. Computes velocity and robot odometry
  */
 void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) {
-
-    current_time = msg->header.stamp;
-
     if (reset) { // service was called
         reset = false;
 
@@ -65,6 +62,7 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
         integrations(msg); // integrate velocities to find robot pose
     }
 
+    current_time = msg->header.stamp;
     // odometry message
     custom_odometry.odom.header.stamp = msg->header.stamp;
     custom_odometry.odom.pose.pose.position.x = current_x;
@@ -97,23 +95,22 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
  *  compute odometry from velocity with two different integration methods
 */
 void Odometry::integrations(const sensor_msgs::JointStateConstPtr& msg) {
-    double vel = sqrt(vx*vx + vy*vy);
-
     ros::Duration time_difference = msg->header.stamp - current_time;
     double t_s = time_difference.toSec(); //time of sampling
 
     if (integration_method == EULER){ // Euler
         // formulas
-        current_x = current_x + vel * t_s * cos(current_theta);
-        current_y = current_y + vel * t_s * sin(current_theta);
+        current_x = current_x + (vx * cos(current_theta) - vy * sin(current_theta)) * t_s;
+        current_y = current_y + (vx * sin(current_theta) + vy * cos(current_theta)) * t_s;
         current_theta = current_theta + omega * t_s;
 
         custom_odometry.method.data = "euler";
 
     } else if (integration_method == RUNGE_KUTTA){ // Runge-Kutta
         // formulas
-        current_x = current_x + vel * t_s * cos(current_theta + omega * t_s / 2.0);
-        current_y = current_y + vel * t_s * sin(current_theta + omega * t_s / 2.0);
+        double theta_hat = current_theta + omega * t_s / 2.0;
+        current_x = current_x + (vx * cos(theta_hat) - vy * sin(theta_hat)) * t_s;
+        current_y = current_y + (vx * sin(theta_hat) + vy * cos(theta_hat)) * t_s;
         current_theta = current_theta + omega * t_s;
 
         custom_odometry.method.data = "runge-kutta";
@@ -185,33 +182,17 @@ void Odometry::optitrack_callback(const geometry_msgs::PoseStampedConstPtr& msg)
         moving_average_y.pop_back();
         moving_average_t.pop_back();
 
-        /*
-        for (auto &n : moving_average_x)
-            sum_x += n;
-
-        for (auto &n : moving_average_y)
-            sum_y += n;
-
-        delta_x = sum_x / (double) num;
-        delta_y = sum_y / (double) num;
-        */
-
         delta_x = moving_average_x.front() - moving_average_x.back();
         delta_y = moving_average_y.front() - moving_average_y.back();
     }
 
-    //delta_x = msg-> pose.position.x - prev_x;
-    //delta_y = msg-> pose.position.y - prev_y;
-
+    // todo: create vector for theta
     tf2::Quaternion quat_tf;
     tf2::convert(msg->pose.orientation , quat_tf);
     double roll, pitch, yaw;
     tf2::Matrix3x3(quat_tf).getRPY(roll, pitch, yaw);
 
     delta_theta = yaw - prev_theta;
-
-    prev_x = msg->pose.position.x;
-    prev_y = msg->pose.position.y;
     prev_theta = yaw;
 
     test_msg.twist.linear.x = delta_x / (moving_average_t.front() - moving_average_t.back());
