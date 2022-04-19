@@ -1,4 +1,4 @@
-#include "robo/Odometry.h"
+#include "odometry_project/Odometry.h"
 
 Odometry::Odometry() {
 
@@ -17,7 +17,7 @@ Odometry::Odometry() {
     // publisher of the robots speeds
     pub_speeds = node.advertise<geometry_msgs::TwistStamped>("/cmd_vel", 1);
     // publisher of the robot pose calculated with odometry formulas
-    pub_odom = node.advertise<robo::odom>("/odom", 1);
+    pub_odom = node.advertise<odometry_project::odom>("/odom", 1);
 
     // creates a timer callback that updates the odometry and parameters each time the timer expires
     timer = node.createTimer(ros::Duration(0.01), &Odometry::callback_publisher_timer, this);
@@ -40,12 +40,9 @@ Odometry::Odometry() {
  */
 void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) {
 
-    if (current_time == ros::Time(0)) { // start of execution
-        //current_x = 0.0;
-        //current_y = 0.0;
-        //current_theta = 0.0;
+    current_time = msg->header.stamp;
 
-    } else if (reset) { // service was called
+    if (reset) { // service was called
         reset = false;
 
         current_x = new_x;
@@ -67,8 +64,6 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
 
         integrations(msg); // integrate velocities to find robot pose
     }
-
-    current_time = msg->header.stamp;
 
     // odometry message
     custom_odometry.odom.header.stamp = msg->header.stamp;
@@ -176,9 +171,37 @@ void Odometry::optitrack_callback(const geometry_msgs::PoseStampedConstPtr& msg)
     ros::Duration time_difference = msg->header.stamp - current_time;
     double t_s = time_difference.toSec(); //time of sampling
 
-    double delta_x, delta_y, delta_theta;
-    delta_x = msg-> pose.position.x - prev_x;
-    delta_y = msg-> pose.position.y - prev_y;
+    double delta_x = 0.0, delta_y = 0.0, delta_theta = 0.0;
+
+    moving_average_x.insert(moving_average_x.begin(), msg->pose.position.x);
+    moving_average_y.insert(moving_average_y.begin(), msg->pose.position.y);
+    moving_average_t.insert(moving_average_t.begin(), msg->header.stamp.toSec());
+
+    double sum_x = 0.0, sum_y = 0.0;
+    int num = 100;
+
+    if (moving_average_x.size() == num) {
+        moving_average_x.pop_back();
+        moving_average_y.pop_back();
+        moving_average_t.pop_back();
+
+        /*
+        for (auto &n : moving_average_x)
+            sum_x += n;
+
+        for (auto &n : moving_average_y)
+            sum_y += n;
+
+        delta_x = sum_x / (double) num;
+        delta_y = sum_y / (double) num;
+        */
+
+        delta_x = moving_average_x.front() - moving_average_x.back();
+        delta_y = moving_average_y.front() - moving_average_y.back();
+    }
+
+    //delta_x = msg-> pose.position.x - prev_x;
+    //delta_y = msg-> pose.position.y - prev_y;
 
     tf2::Quaternion quat_tf;
     tf2::convert(msg->pose.orientation , quat_tf);
@@ -191,9 +214,9 @@ void Odometry::optitrack_callback(const geometry_msgs::PoseStampedConstPtr& msg)
     prev_y = msg->pose.position.y;
     prev_theta = yaw;
 
-    test_msg.twist.linear.x = delta_x / t_s;
-    test_msg.twist.linear.y = delta_y / t_s;
-    test_msg.twist.angular.z = delta_theta / t_s;
+    test_msg.twist.linear.x = delta_x / (moving_average_t.front() - moving_average_t.back());
+    test_msg.twist.linear.y = delta_y / (moving_average_t.front() - moving_average_t.back());
+    test_msg.twist.angular.z = delta_theta / (moving_average_t.front() - moving_average_t.back());
 }
 
 

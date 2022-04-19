@@ -1,32 +1,33 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>robo</name>
-  <version>0.0.0</version>
-  <description>The robo package</description>
+  <name>odometry_project</name>
+  <version>1.0.0</version>
+  <description>The odometry project package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="marco@todo.todo">marco</maintainer>
+  <maintainer email="simone.giampa@mail.polimi.it">Simone</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>TODO</license>
+  <license>MIT</license>
 
 
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/robo</url> -->
+  <!-- <url type="website">http://wiki.ros.org/odometry_project</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
   <!-- Authors do not have to be maintainers, but could be -->
   <!-- Example: -->
-  <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
-
+  <author email="simone.giampa@mail.polimi.it">Simone</author>
+  <author email="marco.dantini@mail.polimi.it">Marco D'Antini</author>
+  <author email="gabriele.pagano@mail.polimi.it">Gabriele Pagano</author>
 
   <!-- The *depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->

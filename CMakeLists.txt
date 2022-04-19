@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(robo)
+project(odometry_project)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -109,7 +109,7 @@ generate_dynamic_reconfigure_options( cfg/parameters.cfg )
 ## DEPENDS: system dependencies of this project that dependent projects also need
 # catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES robo
+#  LIBRARIES odometry_project
 #  CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
 # )
@@ -131,7 +131,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/robo.cpp
+#   src/${PROJECT_NAME}/odometry_project.cpp
 # )
 
 ## Declare a C++ executable

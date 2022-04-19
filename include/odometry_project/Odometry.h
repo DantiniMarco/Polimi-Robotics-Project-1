@@ -7,18 +7,21 @@
 #include "geometry_msgs/PoseStamped.h" // published messages
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <dynamic_reconfigure/server.h>
-#include <tf2/LinearMath/Matrix3x3.h>
-#include "robo/parametersConfig.h" // parameters file config
-#include "robo/odom.h" // odometry message
-#include "robo/set_odometry.h" // odometry service
+
+#include "odometry_project/parametersConfig.h" // parameters file config
+#include "odometry_project/odom.h" // odometry message
+#include "odometry_project/set_odometry.h" // odometry service
+
 #include <cmath>
-#include <tf2/convert.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <vector>
 
 
-using namespace robo;
+
+using namespace odometry_project;
 
 enum integration_methods {EULER, RUNGE_KUTTA};
 
@@ -29,6 +32,10 @@ private:
     double omega, vx, vy; // velocities computed from wheel speeds
     double new_x, new_y, new_theta; // new odometry set by service
     double prev_x = 0.0, prev_y = 0.0, prev_theta = 0.0; // testing purposes variables
+
+    std::vector<double> moving_average_x;
+    std::vector<double> moving_average_y;
+    std::vector<double> moving_average_t;
 
 
     // x, y, theta values set by parameters, can be also dynamically reconfigured

@@ -1,11 +1,11 @@
-#include "robo/Control.h"
+#include "odometry_project/Control.h"
 
 Control::Control() {
 
 	// subscriber to the computed robot velocities and set the callbacks
     sub = node.subscribe("/cmd_vel", 1000, &Control::wheel_velocities_callback, this);
     // publisher for the computed wheels velocities
-    pub_omega = node.advertise<robo::wheels_rpm>("/wheels_rpm", 1);
+    pub_omega = node.advertise<odometry_project::wheels_rpm>("/wheels_rpm", 1);
     // creates a timer callback that updates the odometry and parameters each time the timer expires
     timer = node.createTimer(ros::Duration(0.01), &Control::callback_publisher_timer, this);
 
