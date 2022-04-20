@@ -15,6 +15,7 @@
 #include "odometry_project/parametersConfig.h" // parameters file config
 #include "odometry_project/odom.h" // odometry message
 #include "odometry_project/set_odometry.h" // odometry service
+#include "odometry_project/wheels_rpm.h"
 
 #include <cmath>
 #include <vector>
@@ -50,10 +51,15 @@ private:
     Rear right wheel = 4
     */
     double w1, w2, w3, w4; // input in [rad/min]
+    int t1, t2, t3, t4;
+    int t1_new, t2_new, t3_new, t4_new;
+    int delta_t1, delta_t2, delta_t3, delta_t4;
+    int count = 0;
 
     //messages to be published
     geometry_msgs::TwistStamped velocities; // v and w velocities computed from wheel speeds
     geometry_msgs::TwistStamped test_msg; // partial velocities to be published
+    wheels_rpm tick_msg; //wheel velocities computed from ticks
 
     odom custom_odometry; //computed odometry
 
@@ -65,6 +71,7 @@ private:
     ros::Publisher pub_odom;
     ros::Subscriber sub_test;
     ros::Publisher pub_test;
+    ros::Publisher pub_tick;
     ros::NodeHandle node;
     ros::Timer timer;
     ros::ServiceServer serviceSet;

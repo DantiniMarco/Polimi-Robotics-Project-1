@@ -54,7 +54,7 @@ void Control::callback_publisher_timer(const ros::TimerEvent& ev) {
 void Control::computeOmega() {
 
 	double k = 30.0 * gear_ratio / M_PI;
-
+    //double k = 30.0 * tick_count / M_PI;
     w1 = ((-(l + w) / r) * omega + vx / r - vy / r) * k;
     w2 = (((l + w) / r) * omega + vx / r + vy / r) * k;
     w3 = ((-(l + w) / r) * omega + vx / r + vy / r) * k;
