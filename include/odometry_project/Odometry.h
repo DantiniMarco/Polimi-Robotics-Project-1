@@ -32,11 +32,14 @@ private:
 
     double omega, vx, vy; // velocities computed from wheel speeds
     double new_x, new_y, new_theta; // new odometry set by service
-    double prev_x = 0.0, prev_y = 0.0, prev_theta = 0.0; // testing purposes variables
+    //double prev_x = 0.0, prev_y = 0.0, prev_theta = 0.0; // testing purposes variables
 
     std::vector<double> moving_average_x;
     std::vector<double> moving_average_y;
     std::vector<double> moving_average_t;
+    std::vector<double> moving_average_theta;
+
+    std::vector<double> moving_average_ticks[4];
 
 
     // x, y, theta values set by parameters, can be also dynamically reconfigured
@@ -51,10 +54,11 @@ private:
     Rear right wheel = 4
     */
     double w1, w2, w3, w4; // input in [rad/min]
-    int t1, t2, t3, t4;
-    int t1_new, t2_new, t3_new, t4_new;
-    int delta_t1, delta_t2, delta_t3, delta_t4;
-    int count = 0;
+    
+    //int t1, t2, t3, t4;
+    //int t1_new, t2_new, t3_new, t4_new;
+    //int delta_t1, delta_t2, delta_t3, delta_t4;
+    //int count = 0;
 
     //messages to be published
     geometry_msgs::TwistStamped velocities; // v and w velocities computed from wheel speeds

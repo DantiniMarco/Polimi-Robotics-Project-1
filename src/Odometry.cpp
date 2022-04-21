@@ -55,6 +55,26 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
         w2 = msg->velocity[1]; // front right
         w3 = msg->velocity[2]; // rear left
         w4 = msg->velocity[3]; // rear right
+
+        // moving average for velocity calculated as tick/s
+        for (int i = 0; i < 4; i++) {
+            moving_average_ticks[i].insert(moving_average_ticks[i].begin(), msg->position[i]);
+        }
+        double tick_s[4];
+        int num = 100;
+        if (moving_average_ticks[0].size() == num) {
+            for (int i = 0; i < 4; i++) {
+                tick_s[i] = msg->position[i] - moving_average_ticks[i].back();
+                tick_s[i] *= M_PI * 30.0 / tick_count / t_s;
+            }
+        }
+
+        tick_msg.rpm_fl = tick_s[0];
+        tick_msg.rpm_fr = tick_s[1];
+        tick_msg.rpm_rl = tick_s[2];
+        tick_msg.rpm_rr = tick_s[3];
+
+        /*
         if (count == 0) {
             t1 = msg->position[0]; // same as above
             t2 = msg->position[1];
@@ -96,7 +116,7 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
             tick_msg.rpm_rr = delta_t4;
             tick_msg.rpm_rl = delta_t3;
         }
-        
+        */
 
         computeVelocities(); // calculates robot velocity
 
@@ -215,36 +235,37 @@ void Odometry::optitrack_callback(const geometry_msgs::PoseStampedConstPtr& msg)
     ros::Duration time_difference = msg->header.stamp - current_time;
     double t_s = time_difference.toSec(); //time of sampling
 
-    double delta_x = 0.0, delta_y = 0.0, delta_theta = 0.0;
+    double delta_x = 0.0, delta_y = 0.0, delta_theta = 0.0, delta_t = 0.0;
 
     moving_average_x.insert(moving_average_x.begin(), msg->pose.position.x);
     moving_average_y.insert(moving_average_y.begin(), msg->pose.position.y);
+
+    tf2::Quaternion quat_tf;
+    tf2::convert(msg->pose.orientation , quat_tf);
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(quat_tf).getRPY(roll, pitch, yaw);
+    moving_average_theta.insert(moving_average_theta.begin(), yaw);
+
     moving_average_t.insert(moving_average_t.begin(), msg->header.stamp.toSec());
 
-    double sum_x = 0.0, sum_y = 0.0;
     int num = 100;
 
     if (moving_average_x.size() == num) {
         moving_average_x.pop_back();
         moving_average_y.pop_back();
         moving_average_t.pop_back();
+        moving_average_theta.pop_back();
 
         delta_x = moving_average_x.front() - moving_average_x.back();
         delta_y = moving_average_y.front() - moving_average_y.back();
+        delta_t = moving_average_t.front() - moving_average_t.back();
+        delta_theta = yaw - moving_average_theta.back();
     }
 
-    // todo: create vector for theta
-    tf2::Quaternion quat_tf;
-    tf2::convert(msg->pose.orientation , quat_tf);
-    double roll, pitch, yaw;
-    tf2::Matrix3x3(quat_tf).getRPY(roll, pitch, yaw);
+    test_msg.twist.linear.x = delta_x / delta_t;
+    test_msg.twist.linear.y = delta_y / delta_t;
+    test_msg.twist.angular.z = delta_theta / delta_t;
 
-    delta_theta = yaw - prev_theta;
-    prev_theta = yaw;
-
-    test_msg.twist.linear.x = delta_x / (moving_average_t.front() - moving_average_t.back());
-    test_msg.twist.linear.y = delta_y / (moving_average_t.front() - moving_average_t.back());
-    test_msg.twist.angular.z = delta_theta / (moving_average_t.front() - moving_average_t.back());
 }
 
 
