@@ -52,9 +52,8 @@ void Control::callback_publisher_timer(const ros::TimerEvent& ev) {
 * r = wheel radius
 */
 void Control::computeOmega() {
-
-	double k = 30.0 * gear_ratio / M_PI;
-    //double k = 30.0 * tick_count / M_PI;
+    
+    double k = 60.0 * gear_ratio;
     w1 = ((-(l + w) / r) * omega + vx / r - vy / r) * k;
     w2 = (((l + w) / r) * omega + vx / r + vy / r) * k;
     w3 = ((-(l + w) / r) * omega + vx / r + vy / r) * k;
