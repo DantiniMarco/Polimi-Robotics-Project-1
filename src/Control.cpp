@@ -37,23 +37,21 @@ void Control::wheel_velocities_callback(const geometry_msgs::TwistStampedConstPt
 void Control::callback_publisher_timer(const ros::TimerEvent& ev) {
     if ((latest_sent_time - current_time).toSec() != 0) {
         latest_sent_time = current_time;
-        
+
         //publish omega velocities of the 4 wheels
         pub_omega.publish(omega_msg);
     }
 }
 
 /*
-* omega: angular velocity of the robot -> YAW orientation
+* omega: angular velocity of the robot -> YAW orientation in [RPM = revolutions per minute]
 * vx: linear velocity along x [m/s]
 * vy: linear velocity along y [m/s]
 * w1,w2,w3,w4: angular velocities of the wheels [rad/s]
-* l,w = robot dimensions
-* r = wheel radius
 */
 void Control::computeOmega() {
-    
-    double k = 60.0 * gear_ratio;
+
+    double k = 30.0 * gear_ratio / M_PI;
     w1 = ((-(l + w) / r) * omega + vx / r - vy / r) * k;
     w2 = (((l + w) / r) * omega + vx / r + vy / r) * k;
     w3 = ((-(l + w) / r) * omega + vx / r + vy / r) * k;

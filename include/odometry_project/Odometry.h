@@ -33,12 +33,11 @@ private:
     double omega, vx, vy; // velocities computed from wheel speeds
     double new_x, new_y, new_theta; // new odometry set by service
     //double prev_x = 0.0, prev_y = 0.0, prev_theta = 0.0; // testing purposes variables
-
+    
     std::vector<double> moving_average_x;
     std::vector<double> moving_average_y;
     std::vector<double> moving_average_t;
     std::vector<double> moving_average_theta;
-
     std::vector<double> moving_average_ticks[4];
 
 
@@ -54,11 +53,6 @@ private:
     Rear right wheel = 4
     */
     double w1, w2, w3, w4; // input in [rad/min]
-    
-    //int t1, t2, t3, t4;
-    //int t1_new, t2_new, t3_new, t4_new;
-    //int delta_t1, delta_t2, delta_t3, delta_t4;
-    //int count = 0;
 
     //messages to be published
     geometry_msgs::TwistStamped velocities; // v and w velocities computed from wheel speeds
@@ -73,9 +67,9 @@ private:
     ros::Subscriber sub;
     ros::Publisher pub_speeds;
     ros::Publisher pub_odom;
-    ros::Subscriber sub_test;
-    ros::Publisher pub_test;
-    ros::Publisher pub_tick;
+    //ros::Subscriber sub_test;
+    //ros::Publisher pub_test;
+    //ros::Publisher pub_tick;
     ros::NodeHandle node;
     ros::Timer timer;
     ros::ServiceServer serviceSet;
@@ -84,7 +78,7 @@ private:
     tf2_ros::TransformBroadcaster br;
     geometry_msgs::TransformStamped transformStamped;
 
-    //dynamic reconfiguration
+    //dynamic reconfiguration of the integration method
     dynamic_reconfigure::Server<parametersConfig> server;
     dynamic_reconfigure::Server<parametersConfig>::CallbackType callback_f;
 
@@ -92,9 +86,12 @@ private:
     void callback_publisher_timer(const ros::TimerEvent&);
     bool callback_set_odometry(set_odometry::Request &request, set_odometry::Response &response);
     void callback_dynamic_reconfigure(parametersConfig &config, uint32_t level);
+
+    // functions used for testing purposes only: derivation in time of odometry pose and encoder ticks variables
     void optitrack_callback(const geometry_msgs::PoseStampedConstPtr& msg);
+    void encoder_ticks_callback(const sensor_msgs::JointStateConstPtr& msg);
 
-
+    // mathematical computations
     void computeOmega();
     void computeVelocities();
     void integrations(const sensor_msgs::JointStateConstPtr& msg);

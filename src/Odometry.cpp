@@ -10,16 +10,15 @@ Odometry::Odometry() {
     // subscriber to the wheel velocities and set the callbacks
     sub = node.subscribe("/wheel_states", 1000, &Odometry::wheel_state_callback, this);
 
-    sub_test = node.subscribe("/robot/pose", 1000, &Odometry::optitrack_callback, this);
-
-    pub_test = node.advertise<geometry_msgs::TwistStamped>("/test_vel", 1);
+    // publishers and subscriber for control variables computed by derivation in time
+    //sub_test = node.subscribe("/robot/pose", 1000, &Odometry::optitrack_callback, this);
+    //pub_test = node.advertise<geometry_msgs::TwistStamped>("/test_vel", 1);
+    //pub_tick = node.advertise<odometry_project::wheels_rpm>("/tick_vel", 1);
 
     // publisher of the robots speeds
     pub_speeds = node.advertise<geometry_msgs::TwistStamped>("/cmd_vel", 1);
     // publisher of the robot pose calculated with odometry formulas
     pub_odom = node.advertise<odometry_project::odom>("/odom", 1);
-
-    pub_tick = node.advertise<odometry_project::wheels_rpm>("/tick_vel", 1);
 
     // creates a timer callback that updates the odometry and parameters each time the timer expires
     timer = node.createTimer(ros::Duration(0.01), &Odometry::callback_publisher_timer, this);
@@ -56,67 +55,7 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
         w3 = msg->velocity[2]; // rear left
         w4 = msg->velocity[3]; // rear right
 
-        // moving average for velocity calculated as tick/s
-        for (int i = 0; i < 4; i++) {
-            moving_average_ticks[i].insert(moving_average_ticks[i].begin(), msg->position[i]);
-        }
-        double tick_s[4];
-        int num = 100;
-        if (moving_average_ticks[0].size() == num) {
-            for (int i = 0; i < 4; i++) {
-                tick_s[i] = msg->position[i] - moving_average_ticks[i].back();
-                tick_s[i] *= M_PI * 30.0 / tick_count / t_s;
-            }
-        }
-
-        tick_msg.rpm_fl = tick_s[0];
-        tick_msg.rpm_fr = tick_s[1];
-        tick_msg.rpm_rl = tick_s[2];
-        tick_msg.rpm_rr = tick_s[3];
-
-        /*
-        if (count == 0) {
-            t1 = msg->position[0]; // same as above
-            t2 = msg->position[1];
-            t3 = msg->position[2];
-            t4 = msg->position[3];
-        }
-        count++;
-
-
-        if(count > 0) {
-
-            t1_new = msg->position[0];
-            t2_new = msg->position[1];
-            t3_new = msg->position[2];
-            t4_new = msg->position[3];
-
-
-            delta_t1 = t1_new - t1;
-            delta_t2 = t2_new - t2;
-            delta_t3 = t3_new - t3;
-            delta_t4 = t4_new - t4;
-
-            delta_t1 *= M_PI * 60.0 /21.0/t_s;
-            delta_t2 *= M_PI * 60.0 /21.0/t_s;
-            delta_t3 *= M_PI * 60.0 /21.0/t_s;
-            delta_t4 *= M_PI * 60.0 /21.0/t_s;
-
-
-            t1 = t1_new;
-            t2 = t2_new;
-            t3 = t3_new;
-            t4 = t4_new;
-
-            tick_msg.header.stamp = current_time;
-            tick_msg.header.seq += 1 ;
-
-            tick_msg.rpm_fl = delta_t1;
-            tick_msg.rpm_fr = delta_t2;
-            tick_msg.rpm_rr = delta_t4;
-            tick_msg.rpm_rl = delta_t3;
-        }
-        */
+        // encoder_ticks_callback(msg);
 
         computeVelocities(); // calculates robot velocity
 
@@ -197,8 +136,9 @@ void Odometry::callback_publisher_timer(const ros::TimerEvent& ev) {
 
         // ROS parameter for initial pose (x,y,θ) published as custom odometry message
         pub_odom.publish(custom_odometry);
-        pub_test.publish(test_msg);
-        pub_tick.publish(tick_msg);
+
+        //pub_test.publish(test_msg);
+        //pub_tick.publish(tick_msg);
     }
 }
 
@@ -266,6 +206,26 @@ void Odometry::optitrack_callback(const geometry_msgs::PoseStampedConstPtr& msg)
     test_msg.twist.linear.y = delta_y / delta_t;
     test_msg.twist.angular.z = delta_theta / delta_t;
 
+}
+
+void Odometry::encoder_ticks_callback(const sensor_msgs::JointStateConstPtr& msg) {
+    // moving average for velocity calculated as tick/s
+    for (int i = 0; i < 4; i++) {
+        moving_average_ticks[i].insert(moving_average_ticks[i].begin(), msg->position[i]);
+    }
+    double tick_s[4];
+    int num = 100;
+    if (moving_average_ticks[0].size() == num) {
+        for (int i = 0; i < 4; i++) {
+            tick_s[i] = msg->position[i] - moving_average_ticks[i].back();
+            tick_s[i] *= M_PI * 30.0 / tick_count / t_s;
+        }
+    }
+
+    tick_msg.rpm_fl = tick_s[0];
+    tick_msg.rpm_fr = tick_s[1];
+    tick_msg.rpm_rl = tick_s[2];
+    tick_msg.rpm_rr = tick_s[3];
 }
 
 
