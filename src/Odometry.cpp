@@ -10,6 +10,13 @@ Odometry::Odometry() {
     // subscriber to the wheel velocities and set the callbacks
     sub = node.subscribe("/wheel_states", 1000, &Odometry::wheel_state_callback, this);
 
+    //record a new bag to synchronize velicities and poses
+    sub_record = node.subscribe("/robot/pose", 1000, &Odometry::record_callback, this);
+
+    pub_record = node.advertise<odometry_project::record>("/recorder", 1);
+
+
+
     // publishers and subscriber for control variables computed by derivation in time
     //sub_test = node.subscribe("/robot/pose", 1000, &Odometry::optitrack_callback, this);
     //pub_test = node.advertise<geometry_msgs::TwistStamped>("/test_vel", 1);
@@ -210,6 +217,9 @@ void Odometry::optitrack_callback(const geometry_msgs::PoseStampedConstPtr& msg)
 
 void Odometry::encoder_ticks_callback(const sensor_msgs::JointStateConstPtr& msg) {
     // moving average for velocity calculated as tick/s
+    ros::Duration time_difference = msg->header.stamp - current_time;
+    double t_s = time_difference.toSec(); //time of sampling
+
     for (int i = 0; i < 4; i++) {
         moving_average_ticks[i].insert(moving_average_ticks[i].begin(), msg->position[i]);
     }
@@ -228,6 +238,26 @@ void Odometry::encoder_ticks_callback(const sensor_msgs::JointStateConstPtr& msg
     tick_msg.rpm_rr = tick_s[3];
 }
 
+void Odometry::record_callback(const geometry_msgs::PoseStampedConstPtr& msg){
+    record_msg.pose_x = msg->pose.position.x;
+    record_msg.pose_y = msg->pose.position.y;
+
+    tf2::Quaternion quat_tf;
+    tf2::convert(msg->pose.orientation , quat_tf);
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(quat_tf).getRPY(roll, pitch, yaw);
+
+    record_msg.pose_theta = yaw;
+
+    record_msg.w1 = w1;
+    record_msg.w2 = w2;
+    record_msg.w3 = w3;
+    record_msg.w4 = w4;
+
+    record_msg.header = msg->header;
+
+    pub_record.publish(record_msg);
+}
 
 /**
  *  calculation of the robot velocities from the speeds of the wheels

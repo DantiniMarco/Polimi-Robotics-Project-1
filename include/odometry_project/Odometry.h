@@ -16,6 +16,7 @@
 #include "odometry_project/odom.h" // odometry message
 #include "odometry_project/set_odometry.h" // odometry service
 #include "odometry_project/wheels_rpm.h"
+#include "odometry_project/record.h"
 
 #include <cmath>
 #include <vector>
@@ -58,6 +59,7 @@ private:
     geometry_msgs::TwistStamped velocities; // v and w velocities computed from wheel speeds
     geometry_msgs::TwistStamped test_msg; // partial velocities to be published
     wheels_rpm tick_msg; //wheel velocities computed from ticks
+    record record_msg; 
 
     odom custom_odometry; //computed odometry
 
@@ -65,8 +67,10 @@ private:
     ros::Time latest_sent_time = ros::Time(0);
 
     ros::Subscriber sub;
+    ros::Subscriber sub_record;
     ros::Publisher pub_speeds;
     ros::Publisher pub_odom;
+    ros::Publisher pub_record;
     //ros::Subscriber sub_test;
     //ros::Publisher pub_test;
     //ros::Publisher pub_tick;
@@ -90,6 +94,7 @@ private:
     // functions used for testing purposes only: derivation in time of odometry pose and encoder ticks variables
     void optitrack_callback(const geometry_msgs::PoseStampedConstPtr& msg);
     void encoder_ticks_callback(const sensor_msgs::JointStateConstPtr& msg);
+    void record_callback(const geometry_msgs::PoseStampedConstPtr& msg);
 
     // mathematical computations
     void computeOmega();

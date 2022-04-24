@@ -57,6 +57,7 @@ add_message_files(
    FILES
    odom.msg
    wheels_rpm.msg
+   record.msg
 )
 
 ## Generate services in the 'srv' folder
