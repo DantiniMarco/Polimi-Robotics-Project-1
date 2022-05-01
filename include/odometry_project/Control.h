@@ -12,11 +12,11 @@ using namespace odometry_project;
 
 class Control{
 private:
-	const double l = 0.2, w = 0.169, r = 0.07, gear_ratio = 5.0, tick_count = 42.0;
+	// optimal values found with the Python script
+    const double l = 0.2, w = 0.16648, r = 0.0704, gear_ratio = 5.0, tick_count = 42.0;
 
     ros::Time current_time = ros::Time(0);
 	ros::Time latest_sent_time = ros::Time(0);
-    ros::Duration time_difference;
 
     ros::Publisher pub_omega; //publisher
 
@@ -26,7 +26,7 @@ private:
 
     wheels_rpm omega_msg; // message containing the speeds of the wheels
 
-   	double vx, vy, omega, w1, w2, w3, w4;
+   	double vx, vy, omega, w1, w2, w3, w4; // robot speed and wheels speeds
 
 	void computeOmega();
 	void callback_publisher_timer(const ros::TimerEvent& ev);

@@ -10,11 +10,10 @@ Odometry::Odometry() {
     // subscriber to the wheel velocities and set the callbacks
     sub = node.subscribe("/wheel_states", 1000, &Odometry::wheel_state_callback, this);
 
-    //record a new bag to synchronize velicities and poses
+    // record a new bag to synchronize velicities and poses
     sub_record = node.subscribe("/robot/pose", 1000, &Odometry::record_callback, this);
-
+    // publishes the recorded data to a custon topic so that a new bag can be recorded
     pub_record = node.advertise<odometry_project::record>("/recorder", 1);
-
 
 
     // publishers and subscriber for control variables computed by derivation in time
@@ -150,7 +149,8 @@ void Odometry::callback_publisher_timer(const ros::TimerEvent& ev) {
 }
 
 /**
- *  Service callback that changes the robot pose (x, y, theta parameters)asynchronously
+ *  Service callback that changes the robot pose (x, y, theta parameters) asynchronously
+ *  Request, Response data sent and received via the service
  */
 bool Odometry::callback_set_odometry(set_odometry::Request &request, set_odometry::Response &response) {
     new_x = request.x;
@@ -177,6 +177,9 @@ void Odometry::callback_dynamic_reconfigure(parametersConfig &config, uint32_t l
     ROS_INFO("Request to dynamically reconfigure the integration method received: now using %s", method.c_str());
 }
 
+/**
+    function used for the computation of the robot speed using the ticks data of the wheels encoder
+  */
 void Odometry::optitrack_callback(const geometry_msgs::PoseStampedConstPtr& msg) {
 
     ros::Duration time_difference = msg->header.stamp - current_time;
@@ -184,9 +187,11 @@ void Odometry::optitrack_callback(const geometry_msgs::PoseStampedConstPtr& msg)
 
     double delta_x = 0.0, delta_y = 0.0, delta_theta = 0.0, delta_t = 0.0;
 
+    // moving averages of the x, y, theta coordinate (allow smoother results when dividing by the time delta)
     moving_average_x.insert(moving_average_x.begin(), msg->pose.position.x);
     moving_average_y.insert(moving_average_y.begin(), msg->pose.position.y);
 
+    // converts quaternion to yaw degree
     tf2::Quaternion quat_tf;
     tf2::convert(msg->pose.orientation , quat_tf);
     double roll, pitch, yaw;
@@ -195,8 +200,8 @@ void Odometry::optitrack_callback(const geometry_msgs::PoseStampedConstPtr& msg)
 
     moving_average_t.insert(moving_average_t.begin(), msg->header.stamp.toSec());
 
+    // divides the pose values by the time delta of 2 messages that are 100 data messages apart
     int num = 100;
-
     if (moving_average_x.size() == num) {
         moving_average_x.pop_back();
         moving_average_y.pop_back();
@@ -215,6 +220,9 @@ void Odometry::optitrack_callback(const geometry_msgs::PoseStampedConstPtr& msg)
 
 }
 
+/**
+    computes moving average values for the velocities computed using the wheels' ticks values
+  */
 void Odometry::encoder_ticks_callback(const sensor_msgs::JointStateConstPtr& msg) {
     // moving average for velocity calculated as tick/s
     ros::Duration time_difference = msg->header.stamp - current_time;
@@ -238,7 +246,11 @@ void Odometry::encoder_ticks_callback(const sensor_msgs::JointStateConstPtr& msg
     tick_msg.rpm_rr = tick_s[3];
 }
 
-void Odometry::record_callback(const geometry_msgs::PoseStampedConstPtr& msg){
+/**
+  * callback function that records messages containing data needed for the estimation of the robot dimensions
+  */
+void Odometry::record_callback(const geometry_msgs::PoseStampedConstPtr& msg) {
+    // records the robot pose
     record_msg.pose_x = msg->pose.position.x;
     record_msg.pose_y = msg->pose.position.y;
 
@@ -247,21 +259,25 @@ void Odometry::record_callback(const geometry_msgs::PoseStampedConstPtr& msg){
     double roll, pitch, yaw;
     tf2::Matrix3x3(quat_tf).getRPY(roll, pitch, yaw);
 
+    // records the robot orientation in euler coordinate
     record_msg.pose_theta = yaw;
 
+    // records also the wheel speeds
     record_msg.w1 = w1;
     record_msg.w2 = w2;
     record_msg.w3 = w3;
     record_msg.w4 = w4;
 
+    // adds the timestamp to the published message
     record_msg.header = msg->header;
 
+    // immediately publishes it to allow synchronization of results
     pub_record.publish(record_msg);
 }
 
 /**
- *  calculation of the robot velocities from the speeds of the wheels
-*/
+  * calculation of the robot velocities from the speeds of the wheels
+  */
 void Odometry::computeVelocities() {
     vx = (w1 + w2 + w3 + w4) * (r / 4.0) / 60.0 / gear_ratio;
     vy = (-w1 + w2 + w3 - w4) * (r / 4.0) / 60.0 / gear_ratio;

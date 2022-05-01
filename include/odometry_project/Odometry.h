@@ -29,12 +29,13 @@ enum integration_methods {EULER, RUNGE_KUTTA};
 
 class Odometry {
 private:
-    const double l = 0.2, w = 0.169, r = 0.07, gear_ratio = 5.0, tick_count = 42.0;
+    // optimal values found with the Python script
+    const double l = 0.2, w = 0.16648, r = 0.0704, gear_ratio = 5.0, tick_count = 42.0;
 
     double omega, vx, vy; // velocities computed from wheel speeds
     double new_x, new_y, new_theta; // new odometry set by service
-    //double prev_x = 0.0, prev_y = 0.0, prev_theta = 0.0; // testing purposes variables
 
+    // vector data structure that encodes the data coming from robot pose messages
     std::vector<double> moving_average_x;
     std::vector<double> moving_average_y;
     std::vector<double> moving_average_t;

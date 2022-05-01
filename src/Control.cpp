@@ -11,6 +11,9 @@ Control::Control() {
 
 }
 
+/**
+  * takes the robot linear speeds and calculates the wheels speeds
+  */
 void Control::wheel_velocities_callback(const geometry_msgs::TwistStampedConstPtr& msg) {
 
     current_time = msg->header.stamp;
