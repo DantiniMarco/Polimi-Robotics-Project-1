@@ -1,6 +1,12 @@
 # Robotics Project 1 - Academic Year 2021/2022
 
-### Contributors
+<p align="center">
+  <img width="500" src="images/polimi_logo.png" alt="PoliMi Logo" />
+  <br>
+</p>
+
+## Contributors
+
 - [__Marco D'Antini__](https://github.com/DantiniMarco) (10603556)
 - [__Simone Giampà__](https://github.com/SimonGiampy) (10659184)
 - [__Gabriele Pagano__](https://github.com/gabrielepagano) (10578117)
@@ -12,7 +18,7 @@ Our project is made up of __two  classes__:
 - ``Odometry.h`` and `Control.h` are header files where all the variables and functions declarations are present.
 - ``estimator.py`` is a python script that we used to deal with the robot dimensions calibration part.
 
-More information about the contents of this project repository is present in the README file of the project
+More information about the contents of this project repository is present in the README.md file of the project
 
 ---
 
@@ -41,14 +47,14 @@ where the orientations are set up using a __quaternion__.
 These messages are published by a ROS publisher named "pub_odom".
 We decided to use a function ``callback_publisher_timer`` to publish our messages each time a __timer__ expires.
 
-- The function ``callback_dynamic_reconfigure`` is used to choose the integration method in run-time, so it can switch between Euler and Runke-Kutta approximations.
+- The function ``callback_dynamic_reconfigure`` is used to choose the integration method at run-time, so it can switch between Euler and Runke-Kutta approximations.
 
 - The callback ``callback_set_odometry`` instead changes the robot pose reading the Request/Response fields of a Service type message named ``set_odometry.srv``.
 
 - The methods mentioned before are the main functions we used to accomplish the odometry part of the project. Other methods are for __utility and test purposes__.
 
 - In particular we used ``optitrack_callback`` to __verify and confront__ the shape of the velocitiy plots we calculated with a plot that we could have obtained by dividing the delta positions (_delta_x_, _delta_y_, _delta_theta_) by the time of sampling.
-This plot was firstly __too noisy__, so we used an average of every 100 samples using a vector data structure.
+This plot was at first __too noisy__, so we used an average of every 100 samples using a vector data structure.
 Building and ``test_msg`` message, we plotted it in PlotJuggler and we confirmed that it was correct.
 
 - A similar modality was made in ``encoder_ticks_callback`` where we show the velocity plot using the __ticks instead of RPM__. With the same method of 100 samples average measurement we filled up and published a ``tick_msg`` message in order to visualize it in PlotJuggler.

@@ -6,7 +6,7 @@
   <br>
 </p>
 
-## Group members
+## Contributors
 
 - [__Marco D'Antini__](https://github.com/DantiniMarco) (10603556)
 - [__Simone Giampà__](https://github.com/SimonGiampy) (10659184)
