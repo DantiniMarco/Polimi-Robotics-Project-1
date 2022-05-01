@@ -18,7 +18,7 @@
 |File|Description|
 |---------------|-----------|
 | `parameters.cfg` | configuration file for the dynamic reconfiguration of the integration method parameter |
-| __'images' folder__ | screenshots of the plots and graphs |
+| `'images' folder` | screenshots of the plots and graphs |
 | `Control.h` | header file for the Control class |
 | `Odometry.h` | header file for the Odometry class |
 | `Control.cpp` | publishes the wheel velocities in [RPM] (revolutions per minute) given the robot angular and linear velocities |
@@ -26,7 +26,7 @@
 | `odometry.launch` | launch file that runs the whole project |
 | `odom.msg` | message file containing the computed odometry to be published |
 | `record.msg` | message file containing the recorded data used for calibration |
-| `wheels-rpm.msg` | message file containing the wheel velocities to be published (expressed in [RPM = revolutions per minute]) |
+| `wheels_rpm.msg` | message file containing the wheel velocities to be published (expressed in [RPM = revolutions per minute]) |
 | `estimator.py` | Python code used for the calibration of the robot dimensions (r, l, w) |
 | `set_odometry.srv` | service file containing the coordinate values to be set via the */set_odometry* service |
 
