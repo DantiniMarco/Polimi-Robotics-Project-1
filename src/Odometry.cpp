@@ -19,7 +19,8 @@ Odometry::Odometry() {
     // publishers and subscriber for control variables computed by derivation in time
     //sub_test = node.subscribe("/robot/pose", 1000, &Odometry::optitrack_callback, this);
     //pub_test = node.advertise<geometry_msgs::TwistStamped>("/test_vel", 1);
-    //pub_tick = node.advertise<odometry_project::wheels_rpm>("/tick_vel", 1);
+
+    pub_tick = node.advertise<odometry_project::wheels_rpm>("/tick_vel", 1);
 
     // publisher of the robots speeds
     pub_speeds = node.advertise<geometry_msgs::TwistStamped>("/cmd_vel", 1);
@@ -56,14 +57,21 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
         ros::Duration time_difference = msg->header.stamp - current_time;
         double t_s = time_difference.toSec(); //time of sampling
 
+        /*
         w1 = msg->velocity[0]; // front left
         w2 = msg->velocity[1]; // front right
         w3 = msg->velocity[2]; // rear left
         w4 = msg->velocity[3]; // rear right
+        */
 
-        // encoder_ticks_callback(msg);
+        encoder_ticks_callback(msg);
 
-        computeVelocities(); // calculates robot velocity
+        for (int i = 0; i < 4; i++) {
+            ticks_t[i] = msg->position[i];
+            if (ticks_prev[i] == 0.0) ticks_prev[i] = ticks_t[i];
+        }
+
+        computeVelocities(t_s); // calculates robot velocity
 
         velocities.twist.linear.x = vx;
         velocities.twist.linear.y = vy;
@@ -75,7 +83,7 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
 
     current_time = msg->header.stamp;
     // odometry message
-    custom_odometry.odom.header.stamp = msg->header.stamp;
+    custom_odometry.odom.header = msg->header;
     custom_odometry.odom.pose.pose.position.x = current_x;
     custom_odometry.odom.pose.pose.position.y = current_y;
     current_quaternion.setRPY(0, 0, current_theta);
@@ -143,8 +151,7 @@ void Odometry::callback_publisher_timer(const ros::TimerEvent& ev) {
         // ROS parameter for initial pose (x,y,θ) published as custom odometry message
         pub_odom.publish(custom_odometry);
 
-        //pub_test.publish(test_msg);
-        //pub_tick.publish(tick_msg);
+        pub_tick.publish(tick_msg);
     }
 }
 
@@ -221,7 +228,7 @@ void Odometry::optitrack_callback(const geometry_msgs::PoseStampedConstPtr& msg)
 }
 
 /**
-    computes moving average values for the velocities computed using the wheels' ticks values
+  * computes moving average values for the velocities computed using the wheels' ticks values
   */
 void Odometry::encoder_ticks_callback(const sensor_msgs::JointStateConstPtr& msg) {
     // moving average for velocity calculated as tick/s
@@ -231,12 +238,17 @@ void Odometry::encoder_ticks_callback(const sensor_msgs::JointStateConstPtr& msg
     for (int i = 0; i < 4; i++) {
         moving_average_ticks[i].insert(moving_average_ticks[i].begin(), msg->position[i]);
     }
-    double tick_s[4];
+    moving_average_t.insert(moving_average_t.begin(), msg->header.stamp.toSec());
+
+    //double tick_s[4];
+    double delta_t;
     int num = 100;
     if (moving_average_ticks[0].size() == num) {
         for (int i = 0; i < 4; i++) {
-            tick_s[i] = msg->position[i] - moving_average_ticks[i].back();
-            tick_s[i] *= M_PI * 30.0 / tick_count / t_s;
+            tick_s[i] = moving_average_ticks[i].front() - moving_average_ticks[i].back();
+            delta_t = moving_average_t.front() - moving_average_t.back();
+            tick_s[i] *= 2.0 * M_PI / tick_count / delta_t;
+            moving_average_ticks[i].pop_back();
         }
     }
 
@@ -263,10 +275,10 @@ void Odometry::record_callback(const geometry_msgs::PoseStampedConstPtr& msg) {
     record_msg.pose_theta = yaw;
 
     // records also the wheel speeds
-    record_msg.w1 = w1;
-    record_msg.w2 = w2;
-    record_msg.w3 = w3;
-    record_msg.w4 = w4;
+    record_msg.ticks1 = ticks_t[0];
+    record_msg.ticks2 = ticks_t[1];
+    record_msg.ticks3 = ticks_t[2];
+    record_msg.ticks4 = ticks_t[3];
 
     // adds the timestamp to the published message
     record_msg.header = msg->header;
@@ -278,10 +290,15 @@ void Odometry::record_callback(const geometry_msgs::PoseStampedConstPtr& msg) {
 /**
   * calculation of the robot velocities from the speeds of the wheels
   */
-void Odometry::computeVelocities() {
-    vx = (w1 + w2 + w3 + w4) * (r / 4.0) / 60.0 / gear_ratio;
-    vy = (-w1 + w2 + w3 - w4) * (r / 4.0) / 60.0 / gear_ratio;
-    omega = (-w1 + w2 - w3 + w4) * (r / 4.0 / (l + w)) / 60.0 / gear_ratio;
+void Odometry::computeVelocities(double delta_t) {
+    double v[4];
+    for (int i = 0; i < 4; i++) {
+        v[i] = (ticks_t[i] - ticks_prev[i]) * 2.0 * M_PI / tick_count / delta_t;
+        ticks_prev[i] = ticks_t[i];
+    }
+    vx = (v[0] + v[1] + v[2] + v[3]) * r / 4.0 / gear_ratio;
+    vy = (-v[0] + v[1] + v[2] - v[3]) * r / 4.0 / gear_ratio;
+    omega = (-v[0] + v[1] - v[2] + v[3]) * r / 4.0 / (l + w) / gear_ratio;
 }
 
 

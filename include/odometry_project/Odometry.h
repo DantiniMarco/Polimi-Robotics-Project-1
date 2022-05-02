@@ -30,7 +30,9 @@ enum integration_methods {EULER, RUNGE_KUTTA};
 class Odometry {
 private:
     // optimal values found with the Python script
-    const double l = 0.2, w = 0.16648, r = 0.0704, gear_ratio = 5.0, tick_count = 42.0;
+    //const double l = 0.2, w = 0.16648, r = 0.0704, gear_ratio = 5.0, tick_count = 42.0;
+    //const double l = 0.2, w = 0.145, r = 0.0711, gear_ratio = 5.0, tick_count = 42.0;
+    const double l = 0.2, w = 0.169, r = 0.07, gear_ratio = 5.0, tick_count = 42.0;
 
     double omega, vx, vy; // velocities computed from wheel speeds
     double new_x, new_y, new_theta; // new odometry set by service
@@ -54,7 +56,9 @@ private:
     Rear left wheel = 3
     Rear right wheel = 4
     */
-    double w1 = 0.0, w2 = 0.0, w3 = 0.0, w4 = 0.0; // input in [rad/min]
+    double ticks_t[4] = {0.0, 0.0, 0.0, 0.0}; // input in ticks
+    double ticks_prev[4] = {0.0, 0.0, 0.0, 0.0}; // input in ticks
+    double tick_s[4] = {0.0, 0.0, 0.0, 0.0};
 
     //messages to be published
     geometry_msgs::TwistStamped velocities; // v and w velocities computed from wheel speeds
@@ -74,7 +78,7 @@ private:
     ros::Publisher pub_record;
     //ros::Subscriber sub_test;
     //ros::Publisher pub_test;
-    //ros::Publisher pub_tick;
+    ros::Publisher pub_tick;
     ros::NodeHandle node;
     ros::Timer timer;
     ros::ServiceServer serviceSet;
@@ -99,7 +103,7 @@ private:
 
     // mathematical computations
     void computeOmega();
-    void computeVelocities();
+    void computeVelocities(double delta_t);
     void integrations(const sensor_msgs::JointStateConstPtr& msg);
 
 public:

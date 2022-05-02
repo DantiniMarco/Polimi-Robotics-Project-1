@@ -3,14 +3,17 @@ from bagpy import bagreader
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 class Estimator:
 
-    def __init__(self, csv, lw, rg):
+    def __init__(self, csv, lw, r, n):
 
         # robot standard values
         self.lw = lw
-        self.rg = rg
+        self.r = r
+        self.n = n
+        gear_ratio = 5
 
         # time deltas
         self.t_s = np.add(np.array(csv["header.stamp.secs"]), np.array(csv["header.stamp.nsecs"]) / 1000000000)
@@ -21,10 +24,23 @@ class Estimator:
         self.pose_theta = np.array(csv["pose_theta"])
 
         # wheels speeds read from /wheel_states
-        self.w1 = np.array(csv["w1"])
-        self.w2 = np.array(csv["w2"])
-        self.w3 = np.array(csv["w3"])
-        self.w4 = np.array(csv["w4"])
+        t1 = np.array(csv["ticks1"])
+        t2 = np.array(csv["ticks2"])
+        t3 = np.array(csv["ticks3"])
+        t4 = np.array(csv["ticks4"])
+
+        w1 = np.zeros(len(t1));
+        w2 = np.zeros(len(t2));
+        w3 = np.zeros(len(t3));
+        w4 = np.zeros(len(t4));
+
+        for i in range(1, len(t1)):
+            s = 2 * math.pi / self.n / (self.t_s[i] - self.t_s[i-1])
+            w1[i] = (t1[i] - t1[i-1]) * s
+            w2[i] = (t2[i] - t2[i-1]) * s
+            w3[i] = (t3[i] - t3[i-1]) * s
+            w4[i] = (t4[i] - t4[i-1]) * s
+
 
         # computed odometry initializations
         self.current_x = np.zeros(len(self.t_s))
@@ -32,9 +48,9 @@ class Estimator:
         self.current_theta = np.zeros(len(self.t_s))
 
         # compute robot velocities
-        self.vx = np.add(np.add(np.add(self.w1, self.w2), self.w3), self.w4) * self.rg / 60.0
-        self.vy = np.add(np.add(np.add(-1 * self.w1, self.w2), self.w3), -1 * self.w4) * self.rg / 60.0
-        self.omega = np.add(np.add(np.add(-1 * self.w1, self.w2), -1 * self.w3), self.w4) * (self.rg * self.lw / 60.0)
+        self.vx = np.add(np.add(np.add(w1, w2), w3), w4) * self.r / 4 / gear_ratio
+        self.vy = np.add(np.add(np.add(-1 * w1, w2), w3), -1 * w4) * self.r / 4 / gear_ratio
+        self.omega = np.add(np.add(np.add(-1 * w1, w2), -1 * w3), w4) * self.r / self.lw / 4 / gear_ratio
 
 
     #odometry computations
@@ -61,77 +77,91 @@ class Estimator:
 def main():
     # read bag file (relative directory)
     # read dataset from recorded bag (data from bag3)
-    b = bagreader('../../../bags/dataset_bag3.bag')
+    b = bagreader('../../../bags/dataset_rec.bag')
     # read topic with all data
     odo = b.message_by_topic('/recorder')
     # memorize data read from bag in a pandas Dataframe
     csv = pd.read_csv(odo)
 
     # standard values given for the project assignment
-    lw = 2.7 # lw = l + w
-    rg = 0.0035 # rg = r / 4 / gear_ratio
+    lw = 0.369 # lw = l + w
+    r = 0.07 # rg = r / 4 / gear_ratio
+    N = 42 # TODO: change N
 
     #iteration over multiple values to check the best value for the parameters
-    """ # closer ranges for more precise computation
-    iter_rg = np.linspace(0.0032, 0.0034, 20)
-    iter_lw = np.linspace(2.682, 2.684, 20)
-    error = np.zeros(20)
-    error_2 = np.zeros(20)
-    """
-    gear_ratio = 5
-    iter_rg = np.linspace(0.0032, 0.0038, 200)
-    iter_lw = np.linspace(2.6, 2.8, 200)
-    error = np.zeros(200)
-    error_2 = np.zeros(200)
 
-    print("Given fixed lw = " + str(lw) + ", computing optimal rg value")
+    iter_r = np.linspace(0.076, 0.08, 100)
+    iter_lw = np.linspace(0.36, 0.38, 100)
+    iter_n = np.linspace(40, 44, 5)
+    error_r = np.zeros(100)
+    error_lw = np.zeros(100)
+    error_n = np.zeros(5)
+
+
     k = 0
-    for i in iter_rg:
-        estimator = Estimator(csv, lw, i)
+    for i in iter_r:
+        estimator = Estimator(csv, lw, i, N)
         estimator.cycle()
-        error[k] = estimator.error_squared()
+        error_r[k] = estimator.error_squared()
         k = k+1
 
-    min_rg = iter_rg[np.argmin(error)]
-    print("Minimum error for lw = " + str(1 / lw) + ", rg = " + str(min_rg * 4 * gear_ratio) + ": error = " + str(np.min(error)))
+    min_r = iter_r[np.argmin(error_r)]
+    print("Minimum error for lw = " + str(lw) + ", r = " + str(min_r) + ", n = " + str(N) + ": error = " + str(np.min(error_r)))
 
+    k = 0
+    for h in iter_n:
+        estimator = Estimator(csv, lw, min_r, h)
+        estimator.cycle()
+        error_n[k] = estimator.error_squared()
+        k = k+1
 
-    print("Given fixed rg = " + str(rg) + ", computing optimal lw value")
+    min_n = iter_n[np.argmin(error_n)]
+    print("Minimum error for r = " + str(min_r) + ", lw = " + str(lw) + ", n = " + str(min_n) + ": error = " + str(np.min(error_n)))
+
     k = 0
     for j in iter_lw:
-        estimator = Estimator(csv, j, rg)
+        estimator = Estimator(csv, j, min_r, min_n)
         estimator.cycle()
-        error_2[k] = estimator.error_squared()
+        error_lw[k] = estimator.error_squared()
         k = k+1
 
-    min_lw = iter_lw[np.argmin(error_2)]
-    print("Minimum error for rg = " + str(rg * 4 * gear_ratio) + ", lw = " + str(1 / min_lw) + ": error = " + str(np.min(error_2)))
+    min_lw = iter_lw[np.argmin(error_lw)]
+    print("Minimum error for r = " + str(min_r) + ", lw = " + str(min_lw) + ", n = " + str(min_n) + ": error = " + str(np.min(error_lw)))
+
 
     # plots the error as function of the variable rg value, while lw is fixed
     plt.figure(1)
-    plt.title("fixing lw, error function of rg value")
+    plt.title("fixing lw and n, error function of r value")
     plt.ylabel("squared error value")
-    plt.xlabel("rg value")
-    plt.plot(iter_rg * 4 * gear_ratio, error)
+    plt.xlabel("r value")
+    plt.plot(iter_r, error_r)
     plt.grid()
 
     # plots the error as function of the variable lw value, while rg is fixed
     plt.figure(2)
-    plt.title("fixing rg, error function of lw value")
+    plt.title("fixing r and n, error function of lw value")
     plt.ylabel("squared error value")
     plt.xlabel("lw value")
-    plt.plot(1 / iter_lw, error_2)
+    plt.plot(iter_lw, error_lw)
     plt.grid()
 
-    # optimal values found for lw, rg
-    estimator = Estimator(csv, min_lw, min_rg)
+    # plots the error as function of the variable lw value, while rg is fixed
+    plt.figure(3)
+    plt.title("fixing r and lw, error function of n value")
+    plt.ylabel("squared error value")
+    plt.xlabel("n value")
+    plt.plot(iter_n, error_n)
+    plt.grid()
+
+    # optimal values found for lw, r
+    estimator = Estimator(csv, min_lw, min_r, min_n)
     estimator.cycle()
-    
+
     print("Given optimal parameters , error = " + str(estimator.error_squared()))
 
     estimator.t_s = estimator.t_s - estimator.t_s[0]; # time scaling factor
 
-    plt.figure(3)
+    plt.figure(4)
     plt.title("robot odometry")
     plt.xlabel("time [s]")
     plt.ylabel("robot pose x")
@@ -139,7 +169,7 @@ def main():
     plt.plot(estimator.t_s, estimator.pose_x, label = "given pose x")
     plt.legend()
 
-    plt.figure(4)
+    plt.figure(5)
     plt.title("robot odometry")
     plt.xlabel("time [s]")
     plt.ylabel("robot pose y")
@@ -147,7 +177,7 @@ def main():
     plt.plot(estimator.t_s, estimator.pose_y, label = "given pose y")
     plt.legend()
 
-    plt.figure(5)
+    plt.figure(6)
     plt.title("robot odometry")
     plt.xlabel("time [s]")
     plt.ylabel("robot pose theta")
@@ -172,5 +202,6 @@ if __name__ == "__main__":
     - Wheel position along x (l): 0.200 m
     - Wheel position along y (w): 0.169 m
     - Gear ratio (gear_ratio): 5
+    - N = 42
     """
     main()
