@@ -72,7 +72,7 @@ Thus, we obtained the following:
 
 ### `odom.msg`
 
-- __nav_msgs/Odometry odom:__ odometry published in terms of orientation (with the quaternion <x,y,z,w>)	and position (with the tuple <x,y,z>)
+- __nav_msgs/Odometry odom:__ odometry published in terms of orientation (with the quaternion <x,y,z,w>)  and position (with the tuple <x,y,z>)
 - __std_msgs/String method:__ method of approximation used for the odometry computation (Euler or Runge-Kutta)
 
 ### `record.msg`
@@ -81,10 +81,10 @@ Thus, we obtained the following:
 - __pose_x:__ x coordinate retrieved from the */robot/pose* topic
 - __pose_y:__ y coordinate retrieved from the */robot/pose* topic
 - __pose_theta:__ theta coordinate (expressed as euler coordinate) computed from the orientation present in the */robot/pose* topic (expressed as a quaternion)
-- __w1:__ velocity of the front left wheel recorded in the */wheel_states* topic
-- __w2:__ velocity of the front right wheel recorded in the */wheel_states* topic
-- __w3:__ velocity of the rear left wheel recorded in the */wheel_states* topic
-- __w4:__ velocity of the rear right wheel recorded in the */wheel_states* topic
+- __ticks1:__ velocity of the front left wheel recorded in the */wheel_states* topic in ticks
+- __ticks2:__ velocity of the front right wheel recorded in the */wheel_states* topic in ticks 
+- __ticks3:__ velocity of the rear left wheel recorded in the */wheel_states* topic in ticks
+- __ticks4:__ velocity of the rear right wheel recorded in the */wheel_states* topic in ticks
 
 ### `wheels_rpm.msg`
 
