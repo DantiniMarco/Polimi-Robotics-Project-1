@@ -24,14 +24,17 @@ More information about the contents of this project repository is present in the
 
 ## ``Odometry.cpp``
 
-We wrote down the __formulas__ to compute velocities along x, y (_vx_, _vy_) and angular velocity (_omega_) given the wheel velocites (_w1_, _w2_, _w3_, _w4_) taken from the bags. The following:
+We wrote down the __formulas__ to compute velocities along x, y (_vx_, _vy_) and angular velocity (_omega_) given the wheel velocites (_w1_, _w2_, _w3_, _w4_) taken from the bags expressed in ticks . These are the formulas: 
 ```
-    vx = (w1 + w2 + w3 + w4) * (r / 4.0) / 60.0 / gear_ratio;
-    vy = (-w1 + w2 + w3 - w4) * (r / 4.0) / 60.0 / gear_ratio;
-    omega = (-w1 + w2 - w3 + w4) * (r / 4.0 / (l + w)) / 60.0 / gear_ratio;
+    vx = (w1 + w2 + w3 + w4) * (r / 4.0) / gear_ratio;
+    vy = (-w1 + w2 + w3 - w4) * (r / 4.0) / gear_ratio;
+    omega = (-w1 + w2 - w3 + w4) * (r / 4.0 / (l + w)) / gear_ratio;
 ```
 these formulas are corrected for our purposes and __unit of measurement__:
-- division by 60.0 to transform __[rad/min]__ to __[rad/s]__;
+- ticks data are manipulated to obtain a velocity expressed in __[tick/s]__ and converted in __[rad/s]__ with the folliwing formula: 
+```
+        v[i] = (ticks_t[i] - ticks_prev[i]) * 2.0 * M_PI / tick_count / delta_t;
+```
 - division by _gear_ratio_ to adapt the transmission ratio.
 
 In particular the wheel velocities are imported from the bags using a ROS subscriber named ``sub`` (topic ``/wheel_states``), then ``wheel_state_callback`` is called at each new value, so it computes _vx_, _vy_, _omega_ using ``computeVelocities`` function starting from _w1_, _w2_, _w3_, _w4_;
@@ -57,11 +60,11 @@ We decided to use a function ``callback_publisher_timer`` to publish our message
 This plot was at first __too noisy__, so we used an average of every 100 samples using a vector data structure.
 Building and ``test_msg`` message, we plotted it in PlotJuggler and we confirmed that it was correct.
 
-- A similar modality was made in ``encoder_ticks_callback`` where we show the velocity plot using the __ticks instead of RPM__. With the same method of 100 samples average measurement we filled up and published a ``tick_msg`` message in order to visualize it in PlotJuggler.
-Observing a much higher noise shape of the plot, we decided too __keep using the RPM data__ for our odometry.
+- We used the function ``encoder_ticks_callback`` to show the two velocity plots in order to __confront ticks and RPM__. After a first attempt that showed us the ticks measurement too noisy we tried to smooth them with a method of 100 samples average measurement we filled up and published a ``tick_msg`` message in order to visualize it in PlotJuggler. 
+A not significant impovement with this modality led us to keep using the measure of ticks taken from the bags.
 
 - At this point of the project we started thinking on the __parameters calibration part__, so we decided to develop a Python script in which we compute again the odometry, but this time with the possibility to change and iterate on the required parameters with the aim of __calculating the error value__ with the least squares function.
-In order to do this we needed to record a __new bag__ containing the wheels velocities (_RPM_) and the robot pose, but this time synchronously. In fact we noticed that the _timestamp_ was different between the two measurements. That's what ``record_callback`` is for. It publishes a new message ``record.msg`` through ``pub_record`` ROS publisher.
+In order to do this we needed to record a __new bag__ containing the wheels velocities (_ticks_) and the robot pose, but this time synchronously. In fact we noticed that the _timestamp_ was different between the two measurements. That's what ``record_callback`` is for. It publishes a new message ``record.msg`` through ``pub_record`` ROS publisher.
 We finally recorded the new bag with the values synchronized between the two topics.
 
 ---
@@ -99,7 +102,7 @@ A bag containing all data has previously been recorded, and is used as a __datas
 
 ```python
 # reads dataset from recorded bag (data from bag3)
-b = bagreader('../../../bags/dataset_bag3.bag')
+b = bagreader('../../../bags/dataset_rec.bag')
 # read topic with all data
 odo = b.message_by_topic('/recorder')
 # memorize data read from bag in a pandas Dataframe
@@ -108,21 +111,38 @@ csv = pd.read_csv(odo)
 
 #### Values to be optimized
 
-This script aims to find the __sub-optimal values__ for the *r*, *l* and *w* values. The *gear ratio* is assumed to be fixed at 5. The *N* value (ticks count on the wheels' encoder) is fixed at 42, and not optimized since it is not used neither in the odometry computations, nor in the formulas for obtaining the wheel speeds. The __dimensions of the robot__ is optimized as the sum *l + w* since they appear always as sum in the used formulas.
+This script aims to find the __sub-optimal values__ for the *r*, *l*, *w* and *N* values. The *gear ratio* is assumed to be fixed at 5. The __dimensions of the robot__ is optimized as the sum *l + w* since they appear always as sum in the used formulas.
 
-- In the code, the parameters to be optimized are written as `rg` (*r / 4 / gear ratio*) and `lw` (*l + w*) for simplicity.
+- In the code, the parameters to be optimized are written as `r` and `lw` (*l + w*) for simplicity.
 
 #### Algorithm used for value optimization
 
-The __algorithm optimizes the values separately__ and then combines them together to check the goodness of the approximation visually with the aid of some plots. It follows these steps:
+The __algorithm optimizes the values sequentially__ in an order that we decided on the basis of various tests. We manually switched the iterations on the parameters in order to search for the minimum error value, once it has found it, we replace it in the next iteration and so on for the third iteration. 
+In the end it combines them together to check the goodness of the approximation visually with the aid of some plots. It follows these steps, according to our best parameter order:
 
-1. fixes the *rg* value and let *lw* vary in a certain range, close to the value given in the project assignment (0.2 m + 0.169 m = 0.369 m)
+1. fixes the *lw* and *N* value and let *r* vary in a certain range, close to the value given in the project assignment (0.07 m)
 2. creates an instance of the Estimator class, sets the input values, and computes the odometry with the Runge-Kutta approximation method since it is more accurate.
 3. computes the __squared error value__ for the computed odometry and returns the obtained value.
 4. saves the error values in an array so to create a plot and calculate the minimum value. The __optimal value__ for the dimension parameter corresponds to the minimum error.
-5. fixes the *lw* value and let *rg* vary in a certain range, close to the value given in the project assignment (0.07 m).
-6. repeat steps 2-3-4 and calculate the error with respect to the *lw* variable.
-7. shows 2 plots: one contains the error value as function of the *rg* variable, the other contains the error value of the *lw* variable. With this way there is a __visual check__ of the error function and its minimum value.
+Output:
+```
+Minimum error for lw = 0.369, r = 0.07793939393939393, n = 42: error = 451.88675083689964
+```
+5. replace the minimum *r* value found above and let *N* vary in a certain range, close to the value given in the project assignment (42).
+
+6. repeat steps 2-3-4 and calculate the error with respect to the *N* variable.
+Output: 
+```
+Minimum error for r = 0.07793939393939393, lw = 0.369, n = 42.0: error = 451.88675083689964
+```
+7. replace the minimum *N* and minimum *r* value found above and let *lw* vary in a certain range, close to the value given in the project assignment ( lw = l + w = 0.369 )
+8. repeat steps 2-3-4 and calculate the error with respect to the *lw* variable 
+Output: 
+```
+Minimum error for r = 0.07793939393939393, lw = 0.36848484848484847, n = 42.0: error = 448.6831310853129
+Given optimal parameters , error = 448.6831310853129
+```
+9. shows 3 plots: one contains the error value as function of the *r* variable, one for the error value of the *N* variable and the last for the error of the *lw*. With this way there is a __visual check__ of the error function and its minimum value.
 
 #### Error function
 
@@ -134,17 +154,24 @@ The function used for the computation of the error value evaluates the __"goodne
 
 #### Final results and discussion
 
+- Plot of the odometry found and the robot truth pose:
+<p align="center">
+  <img src="images/odometry_x.png" alt="LW error function" />
+  <br>
+</p>
+ 
+
 - Plot of the total error as function of the *l + w* values:
 
 <p align="center">
-  <img src="images/lw_error.png" alt="LW error function" />
+  <img src="images/error_lw.png" alt="LW error function" />
   <br>
 </p>
 
-- Plot of the total error as function of the *r / 4 / gear ratio* values:
+- Plot of the total error as function of the *r* values:
 
 <p align="center">
-  <img src="images/rg_error.png" alt="RG error function" />
+  <img src="images/error_r.png" alt="RG error function" />
   <br>
 </p>
 
@@ -156,8 +183,10 @@ The function used for the computation of the error value evaluates the __"goodne
 >
 > l = 0.2 m (fixed for simplicity)
 >
-> w = 0.16648 m
+> w = 0.1685 m
 >
-> r = 0.0704 m
+> r = 0.0779 m
 >
 > gear_ratio = 5 (fixed)
+>
+> N = 42 (unchanged)
