@@ -22,7 +22,7 @@
 | `Control.h` | header file for the Control class |
 | `Odometry.h` | header file for the Odometry class |
 | `Control.cpp` | publishes the wheel velocities in [RPM] (revolutions per minute) given the robot angular and linear velocities |
-| `Odometry.cpp` | Computation of odometry and robot velocities; service for changing the robot pose; dynamic reconfiguration of the integration method; callbacks for creating a new bag for the parameters estimation script |
+| `Odometry.cpp` | Computation of robot odometry and robot velocities; service for changing the robot pose; dynamic reconfiguration of the integration method; callbacks for creating a new bag for the parameters estimation script |
 | `odometry.launch` | launch file that runs the whole project |
 | `odom.msg` | message file containing the computed odometry to be published |
 | `record.msg` | message file containing the recorded data used for calibration |
@@ -81,10 +81,10 @@ Thus, we obtained the following:
 - __pose_x:__ x coordinate retrieved from the */robot/pose* topic
 - __pose_y:__ y coordinate retrieved from the */robot/pose* topic
 - __pose_theta:__ theta coordinate (expressed as euler coordinate) computed from the orientation present in the */robot/pose* topic (expressed as a quaternion)
-- __ticks1:__ velocity of the front left wheel recorded in the */wheel_states* topic in ticks
-- __ticks2:__ velocity of the front right wheel recorded in the */wheel_states* topic in ticks 
-- __ticks3:__ velocity of the rear left wheel recorded in the */wheel_states* topic in ticks
-- __ticks4:__ velocity of the rear right wheel recorded in the */wheel_states* topic in ticks
+- __ticks1:__ ticks position of the front left wheel recorded in the */wheel_states* topic
+- __ticks2:__ ticks position of the front right wheel recorded in the */wheel_states* topic
+- __ticks3:__ ticks position of the rear left wheel recorded in the */wheel_states* topic
+- __ticks4:__ ticks position of the rear right wheel recorded in the */wheel_states* topic
 
 ### `wheels_rpm.msg`
 

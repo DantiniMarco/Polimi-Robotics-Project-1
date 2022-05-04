@@ -30,9 +30,12 @@ enum integration_methods {EULER, RUNGE_KUTTA};
 class Odometry {
 private:
     // optimal values found with the Python script
-    //const double l = 0.2, w = 0.16648, r = 0.0704, gear_ratio = 5.0, tick_count = 42.0;
-    //const double l = 0.2, w = 0.145, r = 0.0711, gear_ratio = 5.0, tick_count = 42.0;
-    const double l = 0.2, w = 0.169, r = 0.07, gear_ratio = 5.0, tick_count = 42.0;
+
+    // these values are optimized with respect the input corresponding to the velocities in RPM
+    //const double l = 0.2, w = 0.163, r = 0.0684, gear_ratio = 5.0, tick_count = 42.0;
+
+    // these values are the working ones when the input values are the tick positions of the 4 wheels
+    const double l = 0.2, w = 0.1579, r = 0.07579, gear_ratio = 5.0, tick_count = 42.0;
 
     double omega, vx, vy; // velocities computed from wheel speeds
     double new_x, new_y, new_theta; // new odometry set by service

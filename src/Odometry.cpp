@@ -53,9 +53,8 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
         current_x = new_x;
         current_y = new_y;
         current_theta = new_theta;
+
     } else { // computation
-        ros::Duration time_difference = msg->header.stamp - current_time;
-        double t_s = time_difference.toSec(); //time of sampling
 
         /*
         w1 = msg->velocity[0]; // front left
@@ -63,13 +62,20 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
         w3 = msg->velocity[2]; // rear left
         w4 = msg->velocity[3]; // rear right
         */
-
-        encoder_ticks_callback(msg);
+        //encoder_ticks_callback(msg);
 
         for (int i = 0; i < 4; i++) {
             ticks_t[i] = msg->position[i];
             if (ticks_prev[i] == 0.0) ticks_prev[i] = ticks_t[i];
         }
+        /*
+        if (current_time == ros::Time(0)) {
+            for (int i = 0; i < 4; i++) ticks_prev[i] = ticks_t[i];
+        }
+        */
+
+        ros::Duration time_difference = msg->header.stamp - current_time;
+        double t_s = time_difference.toSec(); //time of sampling
 
         computeVelocities(t_s); // calculates robot velocity
 
@@ -293,6 +299,7 @@ void Odometry::record_callback(const geometry_msgs::PoseStampedConstPtr& msg) {
 void Odometry::computeVelocities(double delta_t) {
     double v[4];
     for (int i = 0; i < 4; i++) {
+        // compute wheels speeds in rad/s from the tick positions
         v[i] = (ticks_t[i] - ticks_prev[i]) * 2.0 * M_PI / tick_count / delta_t;
         ticks_prev[i] = ticks_t[i];
     }

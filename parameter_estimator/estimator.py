@@ -7,13 +7,7 @@ import math
 
 class Estimator:
 
-    def __init__(self, csv, lw, r, n):
-
-        # robot standard values
-        self.lw = lw
-        self.r = r
-        self.n = n
-        gear_ratio = 5
+    def __init__(self, csv):
 
         # time deltas
         self.t_s = np.add(np.array(csv["header.stamp.secs"]), np.array(csv["header.stamp.nsecs"]) / 1000000000)
@@ -29,32 +23,40 @@ class Estimator:
         t3 = np.array(csv["ticks3"])
         t4 = np.array(csv["ticks4"])
 
-        w1 = np.zeros(len(t1));
-        w2 = np.zeros(len(t2));
-        w3 = np.zeros(len(t3));
-        w4 = np.zeros(len(t4));
+        self.w1 = np.zeros(len(t1));
+        self.w2 = np.zeros(len(t2));
+        self.w3 = np.zeros(len(t3));
+        self.w4 = np.zeros(len(t4));
 
         for i in range(1, len(t1)):
-            s = 2 * math.pi / self.n / (self.t_s[i] - self.t_s[i-1])
-            w1[i] = (t1[i] - t1[i-1]) * s
-            w2[i] = (t2[i] - t2[i-1]) * s
-            w3[i] = (t3[i] - t3[i-1]) * s
-            w4[i] = (t4[i] - t4[i-1]) * s
+            #s = 2 * math.pi / self.n / (self.t_s[i] - self.t_s[i-1])
+            s = 2 * math.pi / (self.t_s[i] - self.t_s[i-1])
+            self.w1[i] = (t1[i] - t1[i-1]) * s
+            self.w2[i] = (t2[i] - t2[i-1]) * s
+            self.w3[i] = (t3[i] - t3[i-1]) * s
+            self.w4[i] = (t4[i] - t4[i-1]) * s
 
 
-        # computed odometry initializations
+    #odometry computations
+    def compute(self, r, lw, n):
+
+        # robot dimension values
+        self.lw = lw
+        self.r = r
+        self.n = n
+        gear_ratio = 5
+
+        # compute robot velocities
+        self.vx = np.add(np.add(np.add(self.w1, self.w2), self.w3), self.w4) * self.r / 4 / gear_ratio / self.n
+        self.vy = np.add(np.add(np.add(-1 * self.w1, self.w2), self.w3), -1 * self.w4) * self.r / 4 / gear_ratio / self.n
+        self.omega = np.add(np.add(np.add(-1 * self.w1, self.w2), -1 * self.w3), self.w4) * self.r / self.lw / 4 / gear_ratio / self.n
+
+        # computed odometry initializations to array of zeros
         self.current_x = np.zeros(len(self.t_s))
         self.current_y = np.zeros(len(self.t_s))
         self.current_theta = np.zeros(len(self.t_s))
 
-        # compute robot velocities
-        self.vx = np.add(np.add(np.add(w1, w2), w3), w4) * self.r / 4 / gear_ratio
-        self.vy = np.add(np.add(np.add(-1 * w1, w2), w3), -1 * w4) * self.r / 4 / gear_ratio
-        self.omega = np.add(np.add(np.add(-1 * w1, w2), -1 * w3), w4) * self.r / self.lw / 4 / gear_ratio
-
-
-    #odometry computations
-    def cycle(self):
+        # odometry computations with Runge-Kutta approximation
         delta_t = np.zeros(len(self.t_s))
         theta_hat = np.zeros(len(self.t_s))
         for t in range(1, len(self.t_s)):
@@ -63,6 +65,7 @@ class Estimator:
             self.current_x[t] = self.current_x[t-1] + (self.vx[t] * np.cos(theta_hat[t]) - self.vy[t] * np.sin(theta_hat[t])) * delta_t[t]
             self.current_y[t] = self.current_y[t-1] + (self.vx[t] * np.sin(theta_hat[t]) + self.vy[t] * np.cos(theta_hat[t])) * delta_t[t]
             self.current_theta[t] = self.current_theta[t-1] + self.omega[t] * delta_t[t]
+
 
     # compute error value from difference of true pose and computed odometry
     def error_squared(self):
@@ -90,13 +93,34 @@ def main():
 
     #iteration over multiple values to check the best value for the parameters
 
-    iter_r = np.linspace(0.076, 0.08, 100)
-    iter_lw = np.linspace(0.36, 0.38, 100)
-    iter_n = np.linspace(40, 44, 5)
-    error_r = np.zeros(100)
-    error_lw = np.zeros(100)
-    error_n = np.zeros(5)
+    iter_r = np.linspace(0.065, 0.08, 100)
+    iter_lw = np.linspace(0.32, 0.39, 40)
+    iter_n = np.linspace(37, 46, 10)
+    #error_r = np.zeros(100)
+    #error_lw = np.zeros(100)
+    #error_n = np.zeros(5)
 
+    min_err = 100000000000
+    min_n = 0; min_r = 0; min_lw = 0;
+
+    estimator = Estimator(csv)
+
+    for i in range(len(iter_r)-1):
+        for j in range(len(iter_n)-1):
+            for k in range(len(iter_lw)-1):
+                estimator.compute(iter_r[i], iter_lw[k], iter_n[j]);
+                err = estimator.error_squared()
+                if (err < min_err):
+                    min_err = err;
+                    min_n = iter_n[j];
+                    min_r = iter_r[i];
+                    min_lw = iter_lw[k];
+        print("new iteration over r going: i = " + str(i))
+
+    print("Min n = " + str(min_n) + ", r = " + str(min_r) + ", lw = " + str(min_lw));
+    print("min error = " + str(min_err));
+
+    '''
 
     k = 0
     for i in iter_r:
@@ -153,9 +177,20 @@ def main():
     plt.plot(iter_n, error_n)
     plt.grid()
 
+    '''
+
+    # Min n = 42.0, r = 0.07578947368421053, lw = 0.35789473684210527
+    # min error = 339.6309568802985
+    # Given optimal parameters , error = 339.6309568802985
+
+    # Min n = 38.0, r = 0.06818181818181819, lw = 0.3558974358974359
+    # min error = 337.53801693444905
+    # Given optimal parameters , error = 337.53801693444905
+
     # optimal values found for lw, r
-    estimator = Estimator(csv, min_lw, min_r, min_n)
-    estimator.cycle()
+    # estimator = Estimator(csv, min_lw, min_r, min_n)
+
+    estimator.compute(min_r, min_lw, min_n)
 
     print("Given optimal parameters , error = " + str(estimator.error_squared()))
 
@@ -165,7 +200,7 @@ def main():
     plt.title("robot odometry")
     plt.xlabel("time [s]")
     plt.ylabel("robot pose x")
-    plt.plot(estimator.t_s, estimator.current_x, label = "computed odometry")
+    plt.plot(estimator.t_s, estimator.current_x, label = "computed odometry x")
     plt.plot(estimator.t_s, estimator.pose_x, label = "given pose x")
     plt.legend()
 
@@ -173,7 +208,7 @@ def main():
     plt.title("robot odometry")
     plt.xlabel("time [s]")
     plt.ylabel("robot pose y")
-    plt.plot(estimator.t_s, estimator.current_y, label = "computed odometry")
+    plt.plot(estimator.t_s, estimator.current_y, label = "computed odometry y")
     plt.plot(estimator.t_s, estimator.pose_y, label = "given pose y")
     plt.legend()
 
@@ -181,27 +216,27 @@ def main():
     plt.title("robot odometry")
     plt.xlabel("time [s]")
     plt.ylabel("robot pose theta")
-    plt.plot(estimator.t_s, estimator.current_theta, label = "computed odometry")
+    plt.plot(estimator.t_s, estimator.current_theta, label = "computed odometry theta")
     plt.plot(estimator.t_s, estimator.pose_theta, label = "given pose theta")
     plt.legend()
 
     plt.show()
 
-    """
+    '''
     Simulation results:
     l = 0.2 m (fixed for simplicity)
     w = 0.16648 m
     r = 0.0704 m
     gear_ratio = 5 (fixed)
-    """
+    '''
 
 
 if __name__ == "__main__":
-    """ # initial values
+    ''' # initial values
     - Wheel radius (r): 0.07 m
     - Wheel position along x (l): 0.200 m
     - Wheel position along y (w): 0.169 m
     - Gear ratio (gear_ratio): 5
     - N = 42
-    """
+    '''
     main()
