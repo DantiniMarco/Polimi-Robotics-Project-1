@@ -86,6 +86,7 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
         velocities.header.stamp = msg->header.stamp;
 
         integrations(msg); // integrate velocities to find robot pose
+    }
 
 
 
@@ -115,8 +116,6 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
 
         // broadcast transform
         br.sendTransform(transformStamped);
-    }
-
     
 }
 
