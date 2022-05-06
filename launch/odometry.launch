@@ -7,5 +7,4 @@
     <node pkg="odometry_project" type="odometry" name="odometry_computation" output="screen" />
     <node pkg="odometry_project" type="control" name="reverse_computation" output="screen" />
 
-
 </launch>

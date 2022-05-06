@@ -16,6 +16,7 @@ Odometry::Odometry() {
     pub_record = node.advertise<odometry_project::record>("/recorder", 1);
 
 
+
     // publishers and subscriber for control variables computed by derivation in time
     //sub_test = node.subscribe("/robot/pose", 1000, &Odometry::optitrack_callback, this);
     //pub_test = node.advertise<geometry_msgs::TwistStamped>("/test_vel", 1);
@@ -85,35 +86,38 @@ void Odometry::wheel_state_callback(const sensor_msgs::JointStateConstPtr& msg) 
         velocities.header.stamp = msg->header.stamp;
 
         integrations(msg); // integrate velocities to find robot pose
+
+
+
+        current_time = msg->header.stamp;
+        // odometry message
+        custom_odometry.odom.header = msg->header;
+        custom_odometry.odom.pose.pose.position.x = current_x;
+        custom_odometry.odom.pose.pose.position.y = current_y;
+        current_quaternion.setRPY(0, 0, current_theta);
+        custom_odometry.odom.pose.pose.orientation.x = current_quaternion[0];
+        custom_odometry.odom.pose.pose.orientation.y = current_quaternion[1];
+        custom_odometry.odom.pose.pose.orientation.z = current_quaternion[2];
+        custom_odometry.odom.pose.pose.orientation.w = current_quaternion[3];
+
+        // transformation: set header
+        transformStamped.header.stamp = current_time;
+        transformStamped.header.frame_id = "odom";
+        transformStamped.child_frame_id = "base_link";
+        transformStamped.transform.translation.x = current_x;
+        transformStamped.transform.translation.y = current_y;
+        transformStamped.transform.translation.z = 0.0;
+        // transformation: set theta with quaternion
+        transformStamped.transform.rotation.x = current_quaternion.x();
+        transformStamped.transform.rotation.y = current_quaternion.y();
+        transformStamped.transform.rotation.z = current_quaternion.z();
+        transformStamped.transform.rotation.w = current_quaternion.w();
+
+        // broadcast transform
+        br.sendTransform(transformStamped);
     }
 
-    current_time = msg->header.stamp;
-    // odometry message
-    custom_odometry.odom.header = msg->header;
-    custom_odometry.odom.pose.pose.position.x = current_x;
-    custom_odometry.odom.pose.pose.position.y = current_y;
-    current_quaternion.setRPY(0, 0, current_theta);
-    custom_odometry.odom.pose.pose.orientation.x = current_quaternion[0];
-    custom_odometry.odom.pose.pose.orientation.y = current_quaternion[1];
-    custom_odometry.odom.pose.pose.orientation.z = current_quaternion[2];
-    custom_odometry.odom.pose.pose.orientation.w = current_quaternion[3];
-
-    // transformation: set header
-    transformStamped.header.stamp = current_time;
-    transformStamped.header.frame_id = "odom";
-    transformStamped.child_frame_id = "base_link";
-    // transformation: set x,y,z
-    transformStamped.transform.translation.x = current_x;
-    transformStamped.transform.translation.y = current_y;
-    transformStamped.transform.translation.z = 0.0;
-    // transformation: set theta with quaternion
-    transformStamped.transform.rotation.x = current_quaternion.x();
-    transformStamped.transform.rotation.y = current_quaternion.y();
-    transformStamped.transform.rotation.z = current_quaternion.z();
-    transformStamped.transform.rotation.w = current_quaternion.w();
-
-    // broadcast transform
-    br.sendTransform(transformStamped);
+    
 }
 
 /**
@@ -189,6 +193,9 @@ void Odometry::callback_dynamic_reconfigure(parametersConfig &config, uint32_t l
 
     ROS_INFO("Request to dynamically reconfigure the integration method received: now using %s", method.c_str());
 }
+
+
+
 
 /**
     function used for the computation of the robot speed using the ticks data of the wheels encoder

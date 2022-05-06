@@ -16,7 +16,7 @@ Our project is made up of __two  classes__:
 - `Odometry.cpp` where we compute the odometry part.
 - `Control.cpp` where we compute the control part.
 - `Odometry.h` and `Control.h` are header files where all the variables and functions declarations are present.
-- `estimator.py` is a python script that we used to deal with the robot dimensions calibration part.
+- `estimator.py` is a Python script that we used to deal with the robot dimensions calibration part.
 
 More information about the contents of this project repository is present in the README.md file of the project
 
@@ -86,7 +86,7 @@ The basic idea is to develop a __reverse computation__ starting from the robot v
     w4 = (((l + w) / r) * omega + vx / r - vy / r) * k;
 ```    
 
-We multiply by ``k = gear_ratio / 2 * pi`` to obtain the correct unit of measurement that is [_rad/s_].
+We multiply by ``k = 60 * gear_ratio / 2 * pi`` to obtain the correct unit of measurement that is [_revolutions/minute_].
 
 These are the __steps__:
 
