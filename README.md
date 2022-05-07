@@ -94,7 +94,7 @@ Thus, we obtained the following:
 - __rpm_rl:__ velocity of the rear left wheel
 - __rpm_rr:__ velocity of the rear right wheel
 
-Each velocity is computed from the robot velocities, and are expressed in revolutions per minute.
+Each velocity is computed from the robot realtive velocities, and are expressed in revolutions per minute.
 
 ### `set_odometry.srv`
 
