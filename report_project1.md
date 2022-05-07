@@ -64,13 +64,13 @@ These messages are published by a ROS publisher named `pub_odom`.
 
 - In particular we used `optitrack_callback` to __verify and confront__ the shape of the velocity plots we calculated, with a plot that we have obtained by dividing the robot pose delta values (_delta_x_, _delta_y_, _delta_theta_) by the time of sampling (which corresponds to the derivative of the robot pose by time).
 This plot was at first __too noisy__, so we used an average of every 100 samples using a vector data structure.
-Building and ``test_msg`` message, we plotted it in PlotJuggler and we confirmed that the 2 plots were matching, so the results are correct.
+Filling up and publishing ``test_msg`` message, we plotted it in PlotJuggler and we confirmed that the 2 plots were matching, so the results are correct.
 
-- We used the function ``encoder_ticks_callback`` to show the two velocity plots in order to __confront ticks and RPM__. After a first attempt that showed us the ticks measurement too noisy we tried to smooth them with a method of 100 samples average measurement we filled up and published a ``tick_msg`` message in order to visualize it in PlotJuggler.
+- We used the function ``encoder_ticks_callback`` to show the two velocity plots in order to __confront ticks and RPM__. After a first attempt that showed us the ticks measurement too noisy we tried to smooth them with a method of 100 samples average measurement already used above .So we filled up and published a ``tick_msg`` message in order to visualize it in PlotJuggler.
 A not significant improvement with this modality led us to keep using the measure of ticks taken from the bags.
 
-- At this point of the project we started thinking on the __parameters calibration part__, so we decided to develop a Python script in which we compute again the odometry, but this time with the possibility to change and iterate on the required parameters with the aim of __calculating the error value__ with the least squares function.
-In order to do this we needed to record a __new bag__ containing the wheels tick counts (_ticks_) and the true robot pose, while making sure that they are synchronized. In fact we noticed that the _timestamp_ may be different between the two measurements. That's what ``record_callback`` is for. It publishes a new message ``record.msg`` through ``pub_record`` ROS publisher. Every message published contains values that are coherent with the relative time instant.
+- At this point of the project we started thinking on the __parameters calibration part__, so we decided to develop a Python script in which we compute again the odometry, but this time with the possibility to change, and iterate, on the required parameters with the aim of __calculating the error value__ with the least squares function.
+In order to do this, we needed to record a __new bag__ containing the wheels tick counts (_ticks_) and the true robot pose, while making sure that they are synchronized. In fact we noticed that the _timestamp_ may be different between the two measurements. That's what ``record_callback`` is for. It publishes a new message ``record.msg`` through ``pub_record`` ROS publisher. Every message published contains values that are coherent with the relative time instant.
 We finally recorded the new bag with the synchronized values between the two topics.
 
 ---
@@ -96,7 +96,7 @@ These are the __steps__:
 
 3. `computeOmega` function is called to __compute the angular velocities__ with the actual values;
 
-4. a custom message `omega_msg` __is published__ via a timer callback containing the values _w1_, _w2_, _w3_, _w4_ using the ROS publisher `pub` at every time a timer expires;
+4. a custom message `omega_msg` (of type `wheels_rmp.msg`) __is published__ via a timer callback containing the values _w1_, _w2_, _w3_, _w4_ using the ROS publisher `pub` at every time a timer expires;
 
 Observing on PlotJuggler the plot of our velocities and the velocities taken from the input bags, we made sure that the __two plots were identical__.
 
