@@ -13,7 +13,7 @@ using namespace odometry_project;
 class Control{
 private:
 	// optimal values found with the Python script
-    const double l = 0.2, w = 0.16648, r = 0.0704, gear_ratio = 5.0, tick_count = 42.0;
+    const double l = 0.2, w = 0.1579, r = 0.07579, gear_ratio = 5.0, tick_count = 42.0;
 
     ros::Time current_time = ros::Time(0);
 	ros::Time latest_sent_time = ros::Time(0);

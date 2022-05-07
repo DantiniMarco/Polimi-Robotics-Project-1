@@ -94,7 +94,7 @@ Thus, we obtained the following:
 - __rpm_rl:__ velocity of the rear left wheel
 - __rpm_rr:__ velocity of the rear right wheel
 
-Each velocity is computed from the robot realtive velocities, and are expressed in revolutions per minute.
+Each velocity is computed from the robot relative velocities, and are expressed in revolutions per minute.
 
 ### `set_odometry.srv`
 
@@ -109,3 +109,7 @@ In order to start all the nodes type the following command:
 ```
 roslaunch odometry_project odometry.launch
 ```
+
+## Images folder
+
+The parameters were previously optimized as they were independent, and we also created a few plots to show the error value as function of the various parameter values which we simulated. So in the images folder there are still those plots. Then we changed the structure in order to optimize the values using the ticks positions and we didn't assume anymore that the values were independent with respect to each other. With this way it is not possible anymore to create nice looking 2d or 3d plots of the error function, since it depends from multiple variables.

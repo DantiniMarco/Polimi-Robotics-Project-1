@@ -7,4 +7,6 @@
     <node pkg="odometry_project" type="odometry" name="odometry_computation" output="screen" />
     <node pkg="odometry_project" type="control" name="reverse_computation" output="screen" />
 
+    <node pkg="tf2_ros" type="static_transform_publisher" name="transformation_frame" args="0 0 0 0 0 0 1 world odom " />
+
 </launch>

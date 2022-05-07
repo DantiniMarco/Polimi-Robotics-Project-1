@@ -24,7 +24,7 @@ More information about the contents of this project repository is present in the
 
 ## ``Odometry.cpp``
 
-We wrote down the __formulas__ to compute velocities along x, y (_vx_, _vy_) and angular velocity (_omega_) given the wheel velocites (_w1_, _w2_, _w3_, _w4_) taken from the bags expressed in ticks . These are the formulas used:
+We wrote down the __formulas__ to compute velocities along x, y (_vx_, _vy_) and angular velocity (_omega_) given the wheel velocities (_w1_, _w2_, _w3_, _w4_) taken from the bags expressed in ticks. These are the formulas used:
 
 ```
     vx = (w1 + w2 + w3 + w4) * (r / 4.0) / gear_ratio;
@@ -44,14 +44,15 @@ where v[i] is the speed of the i-th wheel in rad/s; `ticks_t[i]` is the ticks co
 
 In particular the wheels' tick positions are imported from the bags using a ROS subscriber named ``sub`` (topic ``/wheel_states``), then ``wheel_state_callback`` is called at each new value, so it computes _vx_, _vy_, _omega_ using ``computeVelocities`` function starting from the ticks and the relative obtained wheel velocities _w1_, _w2_, _w3_, _w4_.
 
-By calling ``integrations`` we check the __method of integration__ required (between __Euler__ and __Runge-Kutta__) reading a field in the message set by the __parameter reconfiguration__ and finally compute the odometry, filling up an ``odom.msg`` named ``custom_odometry`` containing:
+By calling ``integrations`` we check the __method of integration__ required (between __Euler__ and __Runge-Kutta__) reading a field in the message set by the __parameter reconfiguration__ and finally compute the odometry. Then it sets up a message ``odom.msg`` named ``custom_odometry`` containing:
 
 ```
-pose.pose.position
-pose.pose.orientation
+odom/pose/pose/position
+odom/pose/pose/orientation
+method
 ```
 
-where the orientations are defined using a __quaternion__, and the position is in euler coordinates.
+where the orientation is defined using a __quaternion__, and the position is in euler coordinates; the string method identifies the integration method being used.
 These messages are published by a ROS publisher named `pub_odom`.
 
 - We decided to use a function ``callback_publisher_timer`` to publish our messages each time a __timer__ expires.
@@ -66,7 +67,7 @@ These messages are published by a ROS publisher named `pub_odom`.
 This plot was at first __too noisy__, so we used an average of every 100 samples using a vector data structure.
 Filling up and publishing ``test_msg`` message, we plotted it in PlotJuggler and we confirmed that the 2 plots were matching, so the results are correct.
 
-- We used the function ``encoder_ticks_callback`` to show the two velocity plots in order to __confront ticks and RPM__. After a first attempt that showed us the ticks measurement too noisy we tried to smooth them with a method of 100 samples average measurement already used above .So we filled up and published a ``tick_msg`` message in order to visualize it in PlotJuggler.
+- We used the function ``encoder_ticks_callback`` to show the two velocity plots in order to __confront ticks and RPM__. After a first attempt that showed us the ticks measurement too noisy we tried to smooth them with a method of 100 samples average measurement already used above. So we filled up and published a ``tick_msg`` message in order to visualize it in PlotJuggler.
 A not significant improvement with this modality led us to keep using the measure of ticks taken from the bags.
 
 - At this point of the project we started thinking on the __parameters calibration part__, so we decided to develop a Python script in which we compute again the odometry, but this time with the possibility to change, and iterate, on the required parameters with the aim of __calculating the error value__ with the least squares function.
@@ -86,7 +87,7 @@ The basic idea is to develop a __reverse computation__ starting from the robot v
     w4 = (((l + w) / r) * omega + vx / r - vy / r) * k;
 ```    
 
-We multiply by ``k = 60 * gear_ratio / 2 * pi`` to obtain the correct unit of measurement that is [_revolutions/minute_].
+We multiply by ``k = 60 * gear_ratio / 2 * pi`` to obtain the correct unit of measurement that is [_RPM = revolutions per minute_].
 
 These are the __steps__:
 
@@ -116,6 +117,10 @@ odo = b.message_by_topic('/recorder')
 # memorize data read from bag in a pandas Dataframe
 csv = pd.read_csv(odo)
 ```
+
+There are 2 versions of the calibration script:
+- the first versions used RPM wheel velocities to find the optimal parameters and was calibrated using bag3. This version is now commented inside the script. It also provided few plots since the parameters were optimized "independently".
+- the second version uses the ticks positions of the wheels encoders to find the optimal values and was calibrated using bag2, since it showed the greatest level of inaccuracy in our tests.
 
 #### Values to be optimized
 
