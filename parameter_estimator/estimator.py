@@ -80,7 +80,7 @@ class Estimator:
 def main():
     # read bag file (relative directory)
     # read dataset from recorded bag (data from bag3)
-    b = bagreader('../../../bags/dataset_rec.bag')
+    b = bagreader('dataset_rec.bag')
     # read topic with all data
     odo = b.message_by_topic('/recorder')
     # memorize data read from bag in a pandas Dataframe
